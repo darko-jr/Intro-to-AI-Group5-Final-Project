@@ -1,0 +1,59 @@
+EXPLANATION OF GRAPHS IN FINAL.IPYNB
+1. Target variable distribution (Risk_level counts)
+
+What it shows: How many students fall into each risk category (Low, Medium, High).
+Why it matters: Machine learning models can get biased toward whichever class has the most examples. If one risk level dominates the dataset, your model might just learn to predict that class most of the time and still look "accurate" while doing a poor job on the minority classes. This graph justifies why you used stratify=y in your train/test split — to keep the same class proportions in every split.
+
+2. Final grade (G3) distribution
+
+What it shows: The spread of students' final grades, with the 9 and 14 cutoffs marked as vertical lines.
+Why it matters: This is the graph that explains how your target variable was created. It lets a reader visually confirm your risk-level thresholds make sense against the actual grade distribution, rather than just taking the cutoff numbers (9, 14) on faith.
+
+3. Correlation heatmap of numeric features
+
+What it shows: How strongly each numeric feature (age, study time, absences, failures, grades, etc.) relates to every other one.
+Why it matters: Two things — first, it flags multicollinearity (e.g. G1 and G2 are likely highly correlated with G3, which is expected since they're prior grades in the same course). Second, it gives an early, cheap signal of which features might matter for prediction before you even train a model, which helps justify feature choices later.
+
+4. Study time / absences / failures vs risk level (boxplots)
+
+What it shows: How these three key behavioral features differ across the Low/Medium/High risk groups.
+Why it matters: This is the "story" graph — it turns an abstract model into something intuitive: students with more past failures and more absences tend to land in higher-risk groups, while more study time tends to correlate with lower risk. It's the kind of chart that makes sense to a non-technical audience (like a teacher or school administrator) reading your report.
+
+5. Confusion matrix heatmap
+
+What it shows: For your final tuned model, how many predictions were correct vs. which risk levels got confused with each other (e.g. how often a "Medium" risk student got misclassified as "Low").
+Why it matters: Accuracy alone hides where your model struggles. This shows whether your model's mistakes are "safe" (like mixing up Low/Medium) or more concerning (like predicting a High-risk student as Low-risk, which would be a worse real-world error since it means missing a student who needs support).
+
+6. Model comparison bar chart (Sprint 1 vs Sprint 2)
+
+What it shows: A direct visual comparison of accuracy and Macro F1 between your baseline Random Forest and your final tuned, feature-reduced model.
+Why it matters: This demonstrates the value of your tuning and feature-selection work — it's evidence that Sprint 2's changes (hyperparameter tuning, trimming to top features) actually improved performance rather than just adding complexity for no benefit. It's a good "before vs after" summary slide for your presentation.
+
+---------------------------------------------------------------------------------------------
+
+INCASE OF A PRESENTATION
+Here's a natural, spoken-style script for each graph — timed to sound conversational rather than read off a slide.
+
+1. Target variable distribution
+
+"Before we get into modeling, we wanted to understand our target variable itself. This chart shows how many students fall into each risk category — Low, Medium, and High. As you can see, the classes aren't perfectly even, so during our train-test split we made sure to stratify by this variable — that just means we kept the same proportion of each risk level in our training, validation, and test sets. Otherwise, our model could get skewed toward whichever group had the most students."
+
+2. Final grade (G3) distribution
+
+"This next graph shows where our risk categories actually came from. We used each student's final grade — G3 — and split it into three bands: 9 and below is High risk, 10 to 14 is Medium, and 15 and above is Low risk. You can see those cutoffs marked with the dashed lines. Looking at the shape of the distribution, these thresholds line up naturally with how the grades are actually spread out, so we felt confident this was a reasonable way to define risk."
+
+3. Correlation heatmap
+
+"Before training any models, we looked at how our numeric features relate to each other. This heatmap shows those relationships — darker red means a strong positive correlation, darker blue means a strong negative one. Unsurprisingly, G1 and G2 — the earlier grades in the course — are strongly correlated with G3, the final grade. This gave us an early hint about which features were likely to carry the most predictive power once we got into modeling."
+
+4. Study time / absences / failures vs risk level
+
+"This is really the heart of our story. These three boxplots compare study time, absences, and past failures across our three risk groups. What you can see is a pretty clear pattern — students in the High-risk group tend to have more past failures and more absences, and generally less study time, compared to Low-risk students. This is the kind of insight that makes the model's predictions make intuitive sense, not just statistically, but from a real understanding of student behavior."
+
+5. Confusion matrix
+
+"Once we had our final tuned model, we wanted to know exactly where it was making mistakes — not just how accurate it was overall. This confusion matrix breaks that down. The diagonal shows correct predictions, and anything off the diagonal is where the model confused one risk level for another. What we're really looking for here is whether the model ever mistook a High-risk student for Low-risk — because in a real-world use case, that's the mistake with the highest cost, since it means missing a student who actually needs support."
+
+6. Model comparison bar chart
+
+"Finally, this chart sums up our progress across the project. We compared our baseline Random Forest model from Sprint 1 against our final tuned model from Sprint 2 — after hyperparameter tuning and narrowing down to our top features. As you can see, [state the actual improvement, e.g. 'both accuracy and macro F1 score improved'], which shows that the extra tuning work paid off and didn't just add unnecessary complexity."
