@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smartech | Student Academic Risk Early-Warning Dashboard</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+
+  <!-- App Wrapper with Reference UI Framing -->
+  <div class="app-canvas">
+    <div class="dashboard-shell">
+      
+      <!-- ==================================================================
+           LEFT SIDEBAR (Matches Reference Design)
+           ================================================================== -->
+      <aside class="sidebar">
+        <!-- Logo -->
+        <div class="sidebar-brand">
+          <div class="brand-logo-text">
+            <span>Smar</span><span class="logo-accent">tech</span>
+          </div>
+        </div>
+
+        <!-- User Profile Card -->
+        <div class="user-profile-widget">
+          <div class="user-avatar-wrap">
+            <div class="user-avatar">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+          </div>
+          <div class="user-meta">
+            <span class="user-name">Academic Advisor</span>
+            <span class="user-role">Student Success</span>
+          </div>
+        </div>
+
+        <!-- Sidebar Navigation Menu -->
+        <nav class="sidebar-nav" role="tablist">
+          <button class="nav-item active" data-tab="dashboard" id="btn-tab-dashboard">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
+            <span>Dashboard</span>
+          </button>
+
+          <button class="nav-item" data-tab="recommendations" id="btn-tab-recommendations">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            <span>Recommendations</span>
+            <span class="nav-badge" id="recs-count-badge">4</span>
+          </button>
+
+          <button class="nav-item" data-tab="whatif" id="btn-tab-whatif">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/><path d="m14.83 9.17 4.24-4.24"/><path d="m14.83 14.83 4.24 4.24"/><path d="m9.17 14.83-4.24 4.24"/></svg>
+            <span>What-If Simulator</span>
+          </button>
+
+          <button class="nav-item" data-tab="cohort" id="btn-tab-cohort">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <span>Cohort Triage</span>
+          </button>
+
+          <button class="nav-item" data-tab="analytics" id="btn-tab-analytics">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            <span>Model Analytics</span>
+          </button>
+
+          <button class="nav-item" data-tab="history" id="btn-tab-history">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span>History Log</span>
+          </button>
+        </nav>
+
+        <!-- Sidebar Footer -->
+        <div class="sidebar-footer">
+          <button class="nav-item-logout" onclick="resetForm()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+            <span>Reset Inputs</span>
+          </button>
+        </div>
+      </aside>
+
+      <!-- ==================================================================
+           MAIN CONTENT CANVAS
+           ================================================================== -->
+      <div class="main-body">
+        
+        <!-- Top Navigation Bar -->
+        <header class="top-nav">
+          <div class="greeting-box">
+            <h2>HELLO, ADVISOR!</h2>
+          </div>
+
+          <div class="search-pill-box">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <input type="text" placeholder="Search student profile or quick persona..." id="global-search" oninput="handleQuickSearch(this.value)">
+          </div>
+
+          <div class="top-nav-actions">
+            <div class="icon-bubble-btn" title="Quick Personas" onclick="cyclePersona()">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              <span class="bubble-dot"></span>
+            </div>
+            <div class="profile-pill-mini">
+              <div class="mini-avatar"></div>
+            </div>
+          </div>
+        </header>
+
+        <!-- ================================================================
+             TAB 1: DASHBOARD (Matches reference layout with 3 metric rings)
+             ================================================================ -->
+        <section id="tab-dashboard" class="tab-panel active">
+          
+          <!-- Archetype Pills Bar -->
+          <div class="archetype-bar">
+            <span class="arch-label">Load Archetype:</span>
+            <div class="arch-chips">
+              <button class="arch-chip" onclick="loadPersona('high_risk')"><span class="chip-dot red"></span> High Risk Profile</button>
+              <button class="arch-chip" onclick="loadPersona('borderline')"><span class="chip-dot amber"></span> Borderline / Moderate</button>
+              <button class="arch-chip" onclick="loadPersona('thriving')"><span class="chip-dot green"></span> Thriving / Low Risk</button>
+              <button class="arch-chip" onclick="loadPersona('social_drift')"><span class="chip-dot blue"></span> Social & Attendance Drift</button>
+            </div>
+          </div>
+
+          <!-- Main Dashboard Grid Layout -->
+          <div class="dashboard-grid-layout">
+            
+            <!-- Left 2-Column Content Area -->
+            <div class="content-left-grid">
+              
+              <!-- Card 1: Academic & Attendance Sliders -->
+              <div class="soft-card">
+                <div class="card-title-row">
+                  <h3>Academic Standing</h3>
+                  <span class="card-badge">Primary Features</span>
+                </div>
+
+                <div class="pill-slider-grid">
+                  <div class="pill-slider-item">
+                    <div class="slider-meta">
+                      <label for="inp-G1">First Period Grade (G1)</label>
+                      <span class="pill-value" id="val-G1">11 / 20</span>
+                    </div>
+                    <input type="range" id="inp-G1" min="0" max="20" step="1" value="11" class="soft-slider" oninput="updateInput('G1', this.value)">
+                    <div class="slider-ends"><span>0 Critical</span><span>9 Cutoff</span><span>20 Max</span></div>
+                  </div>
+
+                  <div class="pill-slider-item">
+                    <div class="slider-meta">
+                      <label for="inp-failures">Past Course Failures</label>
+                      <span class="pill-value" id="val-failures">0</span>
+                    </div>
+                    <input type="range" id="inp-failures" min="0" max="3" step="1" value="0" class="soft-slider" oninput="updateInput('failures', this.value)">
+                    <div class="slider-ends"><span>0 None</span><span>1</span><span>2</span><span>3+</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Card 2: Attendance & Engagement Habits -->
+              <div class="soft-card">
+                <div class="card-title-row">
+                  <h3>Attendance & Habits</h3>
+                  <span class="card-badge">Behavioral Metrics</span>
+                </div>
+
+                <div class="pill-slider-grid">
+                  <div class="pill-slider-item">
+                    <div class="slider-meta">
+                      <label for="inp-absences">Term Absences</label>
+                      <span class="pill-value" id="val-absences">4 days</span>
+                    </div>
+                    <input type="range" id="inp-absences" min="0" max="40" step="1" value="4" class="soft-slider" oninput="updateInput('absences', this.value)">
+                    <div class="slider-ends"><span>0 Days</span><span>10 Alert</span><span>40+</span></div>
+                  </div>
+
+                  <div class="pill-slider-item">
+                    <div class="slider-meta">
+                      <label for="inp-freetime">Free Time After School</label>
+                      <span class="pill-value" id="val-freetime">3 / 5</span>
+                    </div>
+                    <input type="range" id="inp-freetime" min="1" max="5" step="1" value="3" class="soft-slider" oninput="updateInput('freetime', this.value)">
+                    <div class="slider-ends"><span>1 Low</span><span>3 Med</span><span>5 High</span></div>
+                  </div>
+
+                  <div class="pill-slider-item">
+                    <div class="slider-meta">
+                      <label for="inp-goout">Going Out with Friends</label>
+                      <span class="pill-value" id="val-goout">3 / 5</span>
+                    </div>
+                    <input type="range" id="inp-goout" min="1" max="5" step="1" value="3" class="soft-slider" oninput="updateInput('goout', this.value)">
+                    <div class="slider-ends"><span>1 Rare</span><span>3 Med</span><span>5 Frequent</span></div>
+                  </div>
+
+                  <div class="pill-slider-item">
+                    <div class="slider-meta">
+                      <label for="inp-Walc">Weekend Alcohol</label>
+                      <span class="pill-value" id="val-Walc">1 / 5</span>
+                    </div>
+                    <input type="range" id="inp-Walc" min="1" max="5" step="1" value="1" class="soft-slider" oninput="updateInput('Walc', this.value)">
+                    <div class="slider-ends"><span>1 Low</span><span>3 Med</span><span>5 High</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Card 3: Lifestyle & Demographic Factors -->
+              <div class="soft-card">
+                <div class="card-title-row">
+                  <h3>Health & Family Background</h3>
+                  <span class="card-badge">Support Factors</span>
+                </div>
+
+                <div class="pill-slider-grid">
+                  <div class="pill-slider-item">
+                    <div class="slider-meta">
+                      <label for="inp-health">Current Health Status</label>
+                      <span class="pill-value" id="val-health">4 / 5</span>
+                    </div>
+                    <input type="range" id="inp-health" min="1" max="5" step="1" value="4" class="soft-slider" oninput="updateInput('health', this.value)">
+                    <div class="slider-ends"><span>1 Poor</span><span>3 Fair</span><span>5 Good</span></div>
+                  </div>
+
+                  <div class="pill-slider-item">
+                    <div class="slider-meta">
+                      <label for="inp-age">Student Age</label>
+                      <span class="pill-value" id="val-age">17 yrs</span>
+                    </div>
+                    <input type="range" id="inp-age" min="15" max="22" step="1" value="17" class="soft-slider" oninput="updateInput('age', this.value)">
+                    <div class="slider-ends"><span>15 yrs</span><span>18 yrs</span><span>22 yrs</span></div>
+                  </div>
+
+                  <div class="pill-slider-item">
+                    <div class="slider-meta">
+                      <label for="inp-Medu">Mother's Education</label>
+                      <span class="pill-value" id="val-Medu">Middle (2)</span>
+                    </div>
+                    <input type="range" id="inp-Medu" min="0" max="4" step="1" value="2" class="soft-slider" oninput="updateInput('Medu', this.value)">
+                    <div class="slider-ends"><span>0 None</span><span>2 Middle</span><span>4 Higher</span></div>
+                  </div>
+
+                  <div class="pill-slider-item">
+                    <div class="slider-meta">
+                      <label for="inp-famrel">Family Relationship Quality</label>
+                      <span class="pill-value" id="val-famrel">4 / 5</span>
+                    </div>
+                    <input type="range" id="inp-famrel" min="1" max="5" step="1" value="4" class="soft-slider" oninput="updateInput('famrel', this.value)">
+                    <div class="slider-ends"><span>1 Poor</span><span>3 Fair</span><span>5 Good</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Card 4: Quick Recommendations Preview Card -->
+              <div class="soft-card recommendations-preview-card">
+                <div class="card-title-row">
+                  <div>
+                    <h3>Priority Action Items</h3>
+                    <p class="card-caption">Immediate advisor interventions generated by the AI model</p>
+                  </div>
+                  <button class="btn-pill-action" onclick="switchToTab('recommendations')">
+                    View Full Plan ➔
+                  </button>
+                </div>
+
+                <div id="dashboard-recs-preview" class="recs-preview-list">
+                  <!-- Populated via JS -->
+                </div>
+              </div>
+
+              <!-- Card 5: Key Contributing Factors (XAI) -->
+              <div class="soft-card">
+                <div class="card-title-row">
+                  <h3>Key Contributing Factors (XAI)</h3>
+                  <span class="card-badge">Feature Impact</span>
+                </div>
+                <div class="xai-pills-row">
+                  <div class="xai-column">
+                    <span class="xai-sub-lbl red">Risk Elevating</span>
+                    <div id="dash-risk-drivers" class="factor-pill-list"></div>
+                  </div>
+                  <div class="xai-column">
+                    <span class="xai-sub-lbl green">Protective Factors</span>
+                    <div id="dash-protective-factors" class="factor-pill-list"></div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Right Column: Vertical Metrics Rail (Directly Matches Reference UI Mockup) -->
+            <div class="metrics-rail">
+              <div class="rail-card-container">
+                
+                <!-- Metric 1: Academic Risk Ring -->
+                <div class="metric-rail-card">
+                  <span class="rail-title">Academic Risk</span>
+                  <div class="ring-wrap">
+                    <svg class="progress-ring" viewBox="0 0 120 120">
+                      <circle class="ring-bg" cx="60" cy="60" r="48"></circle>
+                      <circle class="ring-fill fill-risk" id="ring-risk" cx="60" cy="60" r="48" stroke-dasharray="301.6" stroke-dashoffset="150"></circle>
+                    </svg>
+                    <div class="ring-center-num">
+                      <span id="rail-risk-pct">50%</span>
+                    </div>
+                  </div>
+                  <div class="rail-risk-badge" id="rail-risk-badge">Medium Risk</div>
+                </div>
+
+                <!-- Metric 2: Model Confidence Ring -->
+                <div class="metric-rail-card">
+                  <span class="rail-title">Model Confidence</span>
+                  <div class="ring-wrap">
+                    <svg class="progress-ring" viewBox="0 0 120 120">
+                      <circle class="ring-bg" cx="60" cy="60" r="48"></circle>
+                      <circle class="ring-fill fill-conf" id="ring-conf" cx="60" cy="60" r="48" stroke-dasharray="301.6" stroke-dashoffset="60"></circle>
+                    </svg>
+                    <div class="ring-center-num">
+                      <span id="rail-conf-pct">84%</span>
+                    </div>
+                  </div>
+                  <span class="rail-sub-caption">Classification Certainty</span>
+                </div>
+
+                <!-- Metric 3: First Period Grade (G1) Ring -->
+                <div class="metric-rail-card">
+                  <span class="rail-title">G1 Score Band</span>
+                  <div class="ring-wrap">
+                    <svg class="progress-ring" viewBox="0 0 120 120">
+                      <circle class="ring-bg" cx="60" cy="60" r="48"></circle>
+                      <circle class="ring-fill fill-g1" id="ring-g1" cx="60" cy="60" r="48" stroke-dasharray="301.6" stroke-dashoffset="135"></circle>
+                    </svg>
+                    <div class="ring-center-num">
+                      <span id="rail-g1-val">11/20</span>
+                    </div>
+                  </div>
+                  <span class="rail-sub-caption" id="rail-g1-status">Passing (55%)</span>
+                </div>
+
+                <!-- "See More / View Plan" CTA Button (Matches Reference) -->
+                <div class="rail-footer-action">
+                  <button class="rail-see-more-btn" onclick="switchToTab('recommendations')">
+                    See Full Intervention Plan ➔
+                  </button>
+                  <button class="btn-log-action" onclick="logToHistory()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/></svg>
+                    Log to Session History
+                  </button>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ================================================================
+             TAB 2: DEDICATED RECOMMENDATIONS & INTERVENTION PLAN PANEL
+             ================================================================ -->
+        <section id="tab-recommendations" class="tab-panel">
+          <div class="panel-hero-header">
+            <div>
+              <h2>Prescriptive Intervention & Action Plan</h2>
+              <p>Actionable strategy tailored to the student's unique academic, attendance, and wellbeing risk factors.</p>
+            </div>
+            <div class="plan-header-meta">
+              <div class="student-status-chip" id="rec-student-status-chip">
+                <span>Current Status:</span> <strong id="rec-hero-risk-label">Medium Academic Risk</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4 Comprehensive Action Pillars -->
+          <div class="recommendations-full-grid" id="full-recommendations-container">
+            <!-- Dynamically populated via JS -->
+          </div>
+        </section>
+
+        <!-- ================================================================
+             TAB 3: WHAT-IF SCENARIO SIMULATOR
+             ================================================================ -->
+        <section id="tab-whatif" class="tab-panel">
+          <div class="panel-hero-header">
+            <div>
+              <h2>What-If Intervention Simulator</h2>
+              <p>Simulate hypothetical improvements (e.g. reducing absences from 14 to 2, or boosting G1) and see the live risk trajectory drop.</p>
+            </div>
+            <button class="btn-pill-action" onclick="syncWhatIfWithBaseline()">Sync with Current Profile</button>
+          </div>
+
+          <div class="whatif-3col-grid">
+            <!-- Col 1: Baseline -->
+            <div class="soft-card">
+              <div class="card-title-row">
+                <h3>1. Baseline Profile</h3>
+                <span class="status-pill" id="wi-base-tag">High Risk</span>
+              </div>
+              <div class="wi-ring-stat-box">
+                <div class="wi-metric-val" id="wi-base-score">78.0</div>
+                <div class="wi-metric-lbl">Baseline Risk Score (0-100)</div>
+              </div>
+              <div class="wi-details-list" id="wi-base-summary"></div>
+            </div>
+
+            <!-- Col 2: Adjustment Controls -->
+            <div class="soft-card">
+              <div class="card-title-row">
+                <h3>2. Target Interventions</h3>
+                <span class="card-badge">Simulation Sliders</span>
+              </div>
+              
+              <div class="pill-slider-item">
+                <div class="slider-meta">
+                  <label for="wi-inp-G1">Target G1 Grade (0-20)</label>
+                  <span class="pill-value" id="wi-val-G1">14 / 20</span>
+                </div>
+                <input type="range" id="wi-inp-G1" min="0" max="20" step="1" value="14" class="soft-slider" oninput="runWhatIfSimulation()">
+              </div>
+
+              <div class="pill-slider-item">
+                <div class="slider-meta">
+                  <label for="wi-inp-absences">Reduced Absences Target</label>
+                  <span class="pill-value" id="wi-val-absences">2 days</span>
+                </div>
+                <input type="range" id="wi-inp-absences" min="0" max="40" step="1" value="2" class="soft-slider" oninput="runWhatIfSimulation()">
+              </div>
+
+              <div class="pill-slider-item">
+                <div class="slider-meta">
+                  <label for="wi-inp-Walc">Weekend Alcohol Reduction</label>
+                  <span class="pill-value" id="wi-val-Walc">1 / 5</span>
+                </div>
+                <input type="range" id="wi-inp-Walc" min="1" max="5" step="1" value="1" class="soft-slider" oninput="runWhatIfSimulation()">
+              </div>
+
+              <div class="pill-slider-item">
+                <div class="slider-meta">
+                  <label for="wi-inp-goout">Socializing Moderation</label>
+                  <span class="pill-value" id="wi-val-goout">2 / 5</span>
+                </div>
+                <input type="range" id="wi-inp-goout" min="1" max="5" step="1" value="2" class="soft-slider" oninput="runWhatIfSimulation()">
+              </div>
+            </div>
+
+            <!-- Col 3: Outcome Shift -->
+            <div class="soft-card wi-outcome-card">
+              <div class="card-title-row">
+                <h3>3. Simulated Trajectory</h3>
+                <span class="status-pill green" id="wi-mod-tag">Low Risk</span>
+              </div>
+
+              <div class="wi-outcome-hero">
+                <div class="shift-bubble" id="wi-shift-badge">High Risk ➔ Low Risk</div>
+                <div class="wi-delta-grid">
+                  <div>
+                    <span class="wi-big-num green-txt" id="wi-risk-delta">-54.2</span>
+                    <span class="wi-sub-lbl">Risk Score Drop</span>
+                  </div>
+                  <div>
+                    <span class="wi-big-num green-txt" id="wi-high-p-delta">-72.4%</span>
+                    <span class="wi-sub-lbl">Failure Prob Drop</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="wi-takeaway-box" id="wi-outcome-advice">
+                <p><strong>Advisor Takeaway:</strong> With targeted attendance adherence and academic remediation improving G1 to 14, the student exits the high-risk zone completely.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================================================================
+             TAB 4: COHORT TRIAGE & BATCH CSV
+             ================================================================ -->
+        <section id="tab-cohort" class="tab-panel">
+          <div class="panel-hero-header">
+            <div>
+              <h2>Cohort Triage & Batch Student Assessment</h2>
+              <p>Process an entire classroom or school cohort simultaneously to rank and triage at-risk students.</p>
+            </div>
+            <div class="header-actions">
+              <button class="btn-soft" onclick="loadSampleCohort()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Load 98-Student Sample Cohort
+              </button>
+              <button class="btn-pill-action" onclick="exportBatchCSV()" id="btn-export-batch" disabled>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Export Triage Report (CSV)
+              </button>
+            </div>
+          </div>
+
+          <!-- Drag and Drop Dropzone -->
+          <div class="soft-dropzone" id="drop-zone" onclick="document.getElementById('csv-file-input').click()">
+            <input type="file" id="csv-file-input" accept=".csv" style="display:none;" onchange="handleCSVUpload(this.files)">
+            <div class="dropzone-inner">
+              <div class="dropzone-circle">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              </div>
+              <h3>Upload Student CSV Dataset</h3>
+              <p>Drag and drop your <code>.csv</code> file here or click to browse</p>
+            </div>
+          </div>
+
+          <!-- Cohort KPI Cards -->
+          <div class="cohort-summary-grid" id="batch-kpis" style="display:none;">
+            <div class="cohort-kpi-card">
+              <span class="kpi-lbl">Total Students</span>
+              <span class="kpi-val" id="kpi-total">98</span>
+              <span class="kpi-desc">Cohort Size</span>
+            </div>
+            <div class="cohort-kpi-card kpi-red">
+              <span class="kpi-lbl">High Risk</span>
+              <span class="kpi-val red-txt" id="kpi-high">15 (15.3%)</span>
+              <span class="kpi-desc">Urgent Action Required</span>
+            </div>
+            <div class="cohort-kpi-card kpi-amber">
+              <span class="kpi-lbl">Medium Risk</span>
+              <span class="kpi-val amber-txt" id="kpi-med">63 (64.3%)</span>
+              <span class="kpi-desc">Borderline / Check-in</span>
+            </div>
+            <div class="cohort-kpi-card kpi-green">
+              <span class="kpi-lbl">Low Risk</span>
+              <span class="kpi-val green-txt" id="kpi-low">20 (20.4%)</span>
+              <span class="kpi-desc">On Track</span>
+            </div>
+          </div>
+
+          <!-- Triage Table -->
+          <div class="soft-card table-card" id="batch-table-wrap" style="display:none;">
+            <div class="table-toolbar">
+              <div class="table-search-pill">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                <input type="text" id="table-search-input" placeholder="Search student ID, primary concern, or action..." oninput="filterTable()">
+              </div>
+              <div class="table-filter-pills">
+                <button class="filter-chip active" onclick="setTableFilter('all', this)">All</button>
+                <button class="filter-chip" onclick="setTableFilter('High', this)">High Risk</button>
+                <button class="filter-chip" onclick="setTableFilter('Medium', this)">Medium</button>
+                <button class="filter-chip" onclick="setTableFilter('Low', this)">Low</button>
+              </div>
+            </div>
+
+            <div class="table-scroll-container">
+              <table class="modern-table" id="batch-table">
+                <thead>
+                  <tr>
+                    <th>Student ID</th>
+                    <th>Risk Level</th>
+                    <th>Confidence</th>
+                    <th>Risk Score</th>
+                    <th>G1 Grade</th>
+                    <th>Failures</th>
+                    <th>Absences</th>
+                    <th>Primary Concern</th>
+                    <th>Recommended Action</th>
+                  </tr>
+                </thead>
+                <tbody id="batch-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================================================================
+             TAB 5: MODEL ANALYTICS & INTERPRETATION GUIDE
+             ================================================================ -->
+        <section id="tab-analytics" class="tab-panel">
+          <div class="panel-hero-header">
+            <div>
+              <h2>Model Analytics & Research Insights</h2>
+              <p>Trained architecture specifications, evaluation benchmarks, and feature importance rankings.</p>
+            </div>
+            <a href="/guide" target="_blank" class="btn-soft">View Full Technical Guide ↗</a>
+          </div>
+
+          <div class="cohort-summary-grid">
+            <div class="cohort-kpi-card">
+              <span class="kpi-lbl">Test Accuracy</span>
+              <span class="kpi-val purple-txt">80.6%</span>
+              <span class="kpi-desc">Overall Test Set Accuracy</span>
+            </div>
+            <div class="cohort-kpi-card">
+              <span class="kpi-lbl">Macro F1-Score</span>
+              <span class="kpi-val purple-txt">0.710</span>
+              <span class="kpi-desc">Balanced Multi-Class Score</span>
+            </div>
+            <div class="cohort-kpi-card">
+              <span class="kpi-lbl">Weighted F1</span>
+              <span class="kpi-val purple-txt">0.791</span>
+              <span class="kpi-desc">Support Weighted</span>
+            </div>
+            <div class="cohort-kpi-card">
+              <span class="kpi-lbl">Severe Errors</span>
+              <span class="kpi-val green-txt">0.0%</span>
+              <span class="kpi-desc">Zero High->Low False Negatives</span>
+            </div>
+          </div>
+
+          <div class="analytics-2col-grid">
+            <!-- Feature Importance -->
+            <div class="soft-card">
+              <div class="card-title-row">
+                <h3>Feature Importance Weights</h3>
+                <span class="card-badge">Random Forest</span>
+              </div>
+              <div class="feature-bar-list" id="feature-importance-bars"></div>
+            </div>
+
+            <!-- Confusion Matrix -->
+            <div class="soft-card">
+              <div class="card-title-row">
+                <h3>Confusion Matrix (N=98)</h3>
+                <span class="card-badge">Test Partition</span>
+              </div>
+              <div class="cm-soft-wrap">
+                <div class="cm-soft-grid">
+                  <div></div>
+                  <div class="cm-col-tag">Pred: High</div>
+                  <div class="cm-col-tag">Pred: Med</div>
+                  <div class="cm-col-tag">Pred: Low</div>
+
+                  <div class="cm-row-tag">True: High (15)</div>
+                  <div class="cm-cell-box hit">5 <span class="cm-sub">(33%)</span></div>
+                  <div class="cm-cell-box miss">10 <span class="cm-sub">(67%)</span></div>
+                  <div class="cm-cell-box zero">0 <span class="cm-sub">(0%)</span></div>
+
+                  <div class="cm-row-tag">True: Med (63)</div>
+                  <div class="cm-cell-box miss">3 <span class="cm-sub">(5%)</span></div>
+                  <div class="cm-cell-box hit">59 <span class="cm-sub">(94%)</span></div>
+                  <div class="cm-cell-box miss">1 <span class="cm-sub">(1%)</span></div>
+
+                  <div class="cm-row-tag">True: Low (20)</div>
+                  <div class="cm-cell-box zero">0 <span class="cm-sub">(0%)</span></div>
+                  <div class="cm-cell-box miss">5 <span class="cm-sub">(25%)</span></div>
+                  <div class="cm-cell-box hit">15 <span class="cm-sub">(75%)</span></div>
+                </div>
+                <div class="cm-callout">
+                  <strong>Safety Metric:</strong> The model never misclassifies a <em>High-Risk</em> student as <em>Low-Risk</em> (0%), ensuring no student in academic distress goes unnoticed.
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================================================================
+             TAB 6: SESSION ASSESSMENT HISTORY
+             ================================================================ -->
+        <section id="tab-history" class="tab-panel">
+          <div class="panel-hero-header">
+            <div>
+              <h2>Assessment Session Log</h2>
+              <p>Chronological record of student assessments completed during this active session.</p>
+            </div>
+            <div class="header-actions">
+              <button class="btn-soft" onclick="exportHistoryCSV()">Export Log (CSV)</button>
+              <button class="btn-soft danger" onclick="clearHistory()">Clear History</button>
+            </div>
+          </div>
+
+          <div class="soft-card table-card">
+            <div class="table-scroll-container">
+              <table class="modern-table" id="history-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Time</th>
+                    <th>Risk Category</th>
+                    <th>Confidence</th>
+                    <th>G1 Grade</th>
+                    <th>Failures</th>
+                    <th>Absences</th>
+                    <th>Health</th>
+                    <th>Primary Concern</th>
+                    <th>Recommended Action</th>
+                  </tr>
+                </thead>
+                <tbody id="history-tbody">
+                  <tr><td colspan="10" class="empty-state">No assessments logged yet. Use the Dashboard tab and click "Log to Session History".</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
