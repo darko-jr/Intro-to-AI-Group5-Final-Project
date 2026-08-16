@@ -81,8 +81,4 @@ Open **http://127.0.0.1:7860** in your web browser.
 
 ---
 
-## 4. Team Contributions
-- **Daniel (CS):** Core machine learning pipeline, feature engineering, and inference engine.
-- **Victoria (MIS):** Exploratory data analysis, target discretization, and metrics evaluation.
-- **Esbert (CS):** Web backend integration, scenario simulation, and API development.
-- **Vera (MIS):** Documentation, intervention design, and ethics audit.
+
