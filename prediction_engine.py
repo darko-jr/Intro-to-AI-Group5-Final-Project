@@ -157,6 +157,21 @@ PRESET_PERSONAS = {
     }
 }
 
+COLUMN_ALIASES = {
+    "G1": ["g1", "g1_grade", "grade1", "first_period", "g1_score", "first_grade", "period1", "first_term_grade"],
+    "failures": ["failures", "failure", "past_failures", "class_failures", "failed_courses", "fail", "past_fails"],
+    "absences": ["absences", "absence", "absent", "days_absent", "attendance", "missed_days", "missed_classes"],
+    "age": ["age", "student_age", "years"],
+    "health": ["health", "health_status", "vitality"],
+    "freetime": ["freetime", "free_time", "leisure"],
+    "Walc": ["walc", "weekend_alcohol", "alcohol", "weekend_alc", "alcohol_use"],
+    "goout": ["goout", "going_out", "social", "outing", "outings"],
+    "Medu": ["medu", "mother_education", "mother_edu", "mom_edu", "m_edu"],
+    "famrel": ["famrel", "family_rel", "family_relationship", "family_quality", "fam_support"],
+    "Name": ["name", "student_name", "full_name", "student"],
+    "id": ["id", "student_id", "roll_no", "stu_id"]
+}
+
 
 def _find_file(filename: str) -> str:
     candidates = [
@@ -463,9 +478,23 @@ class StudentRiskEngine:
         results = []
         working_df = df.copy()
         
+        # 1. Normalize column names and map aliases
+        col_map = {}
+        for c in working_df.columns:
+            clean_c = str(c).strip().lower()
+            for target_feat, aliases in COLUMN_ALIASES.items():
+                if clean_c == target_feat.lower() or clean_c in aliases:
+                    col_map[c] = target_feat
+                    break
+        working_df = working_df.rename(columns=col_map)
+        
+        # 2. Impute any completely missing feature columns with default baselines
         for feat in self.top_features:
             if feat not in working_df.columns:
                 working_df[feat] = FEATURE_METADATA[feat]["default"]
+            else:
+                # Handle individual NaN values within existing columns
+                working_df[feat] = pd.to_numeric(working_df[feat], errors="coerce").fillna(FEATURE_METADATA[feat]["default"])
                 
         for idx, row in working_df.iterrows():
             input_dict = row.to_dict()
@@ -474,8 +503,12 @@ class StudentRiskEngine:
             top_drivers = pred["contributions"]["risk_drivers"]
             flag = top_drivers[0]["name"] if top_drivers else "None"
             
+            stu_id = str(row.get("Student ID", row.get("id", f"STU-{idx+1:03d}")))
+            stu_name = str(row.get("Name", row.get("name", stu_id)))
+            
             results.append({
-                "Student ID": row.get("id", f"STU-{idx+1:03d}"),
+                "Student ID": stu_id,
+                "Name": stu_name,
                 "Predicted Risk": pred["predicted_class"],
                 "Confidence": f"{pred['confidence']}%",
                 "Risk Score": pred["risk_score"],
@@ -510,20 +543,13 @@ class StudentRiskEngine:
         self.students_db = []
         dataset_path = _find_file("student-por.csv")
         
-        FIRST_NAMES_F = ["Ana", "Beatriz", "Carolina", "Diana", "Elena", "Filipa", "Helena", "Inês", "Joana", "Leonor", "Maria", "Margarida", "Mariana", "Rita", "Sofia"]
-        FIRST_NAMES_M = ["Afonso", "Bernardo", "Daniel", "Diogo", "Eduardo", "Gabriel", "Gonçalo", "João", "Lucas", "Martim", "Miguel", "Nuno", "Pedro", "Rafael", "Tiago", "Vasco"]
-        SURNAMES = ["Silva", "Santos", "Ferreira", "Pereira", "Oliveira", "Costa", "Rodrigues", "Martins", "Jesus", "Sousa", "Fernandes", "Gonçalves", "Gomes", "Lopes", "Marques", "Alves", "Ribeiro", "Pinto", "Carvalho", "Teixeira"]
-
         if os.path.exists(dataset_path):
             try:
                 df = pd.read_csv(dataset_path, sep=";" if ";" in open(dataset_path).readline() else ",")
                 for idx, row in df.iterrows():
                     stu_id = f"STU-{idx+1:03d}"
                     sex = str(row.get("sex", "F")).strip()
-                    rng = np.random.RandomState(idx * 7 + 42)
-                    first = rng.choice(FIRST_NAMES_F if sex == "F" else FIRST_NAMES_M)
-                    last = rng.choice(SURNAMES)
-                    full_name = f"{first} {last}"
+                    stu_name = str(row.get("Name", row.get("name", stu_id)))
                     
                     g3 = float(row.get("G3", 11))
                     actual_risk = "High" if g3 <= 9 else ("Low" if g3 >= 15 else "Medium")
@@ -534,7 +560,7 @@ class StudentRiskEngine:
                         
                     self.students_db.append({
                         "id": stu_id,
-                        "name": full_name,
+                        "name": stu_name,
                         "sex": sex,
                         "school": str(row.get("school", "GP")),
                         "inputs": student_inputs,
@@ -545,13 +571,13 @@ class StudentRiskEngine:
                 print("Error loading students DB from CSV:", e)
                 
         if not self.students_db:
-            sample_names = ["Ana Silva", "Lucas Ferreira", "Beatriz Santos", "Diogo Costa", "Helena Martins", "Pedro Oliveira"]
-            for i, name in enumerate(sample_names):
+            for i in range(30):
+                stu_id = f"STU-{i+1:03d}"
                 p_key = list(PRESET_PERSONAS.keys())[i % len(PRESET_PERSONAS)]
                 inputs = dict(PRESET_PERSONAS[p_key]["values"])
                 self.students_db.append({
-                    "id": f"STU-{i+1:03d}",
-                    "name": name,
+                    "id": stu_id,
+                    "name": stu_id,
                     "sex": "F" if i % 2 == 0 else "M",
                     "school": "GP",
                     "inputs": inputs,

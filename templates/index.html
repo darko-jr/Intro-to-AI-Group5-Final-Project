@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="stylesheet" href="/static/styles.css?v=2.1">
 </head>
 <body>
 
@@ -56,11 +56,6 @@
             <span>Cohort Triage</span>
           </button>
 
-          <button class="nav-item" data-tab="analytics" id="btn-tab-analytics" title="Academic Audit & Model Verification">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-            <span>Model Validation</span>
-          </button>
-
           <button class="nav-item" data-tab="history" id="btn-tab-history">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             <span>History Log</span>
@@ -83,7 +78,7 @@
             <div class="greeting-title-row">
               <h2>Student Risk Early-Warning Portal</h2>
               <span class="active-student-pill" id="active-student-pill" style="display:none;" onclick="clearActiveStudent()" title="Click to clear active student selection">
-                <span id="active-student-text">Active: STU-001 · Ana Silva</span>
+                <span id="active-student-text">Active: STU-001</span>
                 <span class="pill-remove-btn">&times;</span>
               </span>
             </div>
@@ -93,24 +88,15 @@
           <div class="search-container">
             <div class="search-pill-box">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-              <input type="text" placeholder="Search student ID, name, or persona..." id="global-search" oninput="handleGlobalSearch(this.value)" onfocus="handleGlobalSearch(this.value)" autocomplete="off">
+              <input type="text" placeholder="Search student ID, name, or persona..." id="global-search" oninput="handleGlobalSearch(this.value)" onfocus="handleGlobalSearch(this.value)" onkeydown="if(event.key==='Enter'){handleGlobalSearchEnter();}" autocomplete="off">
               <button class="search-clear-btn" id="search-clear-btn" onclick="clearGlobalSearch()" style="display:none;">&times;</button>
             </div>
             <div class="search-dropdown-menu" id="search-dropdown-menu" style="display:none;"></div>
           </div>
 
           <div class="top-nav-actions">
-            <!-- Notification / Alert Dropdown -->
-            <div class="nav-action-wrapper">
-              <button class="icon-bubble-btn" id="btn-notifications" title="System Alerts & Notifications" onclick="toggleNotificationsDropdown()">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-                <span class="bubble-dot" id="notif-badge-dot"></span>
-              </button>
-              <div class="notifications-dropdown-menu" id="notifications-dropdown-menu" style="display:none;"></div>
-            </div>
-
-            <!-- Technical Guide Button -->
-            <a href="/guide" target="_blank" class="nav-guide-btn" title="Open Technical Guide & Metric Explanations">
+            <!-- User Guide Button -->
+            <a href="/guide" target="_blank" class="nav-guide-btn" title="Open User Guide & Technical Interpretation Manual">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
               <span>User Guide</span>
             </a>
@@ -120,12 +106,82 @@
         <!-- Tab 1: Dashboard -->
         <section id="tab-dashboard" class="tab-panel active">
           
+          <!-- Teacher Student Directory & Class Roster Panel -->
+          <div class="roster-panel-card">
+            <div class="roster-panel-header">
+              <div class="roster-title-group">
+                <div class="roster-icon-bubble">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                </div>
+                <div>
+                  <div class="roster-title-row">
+                    <h3>Student Directory & Class Roster</h3>
+                    <span class="roster-count-badge" id="roster-total-count">649 Enrolled</span>
+                  </div>
+                  <p class="roster-subtitle">Select any student below to inspect their academic indicators, forecast risk, and test remedial adjustments.</p>
+                </div>
+              </div>
+
+              <!-- Roster Controls -->
+              <div class="roster-controls">
+                <div class="roster-search-box">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                  <input type="text" id="roster-search-input" placeholder="Search student name or ID..." oninput="handleRosterSearch(this.value)">
+                </div>
+                <div class="roster-filter-pills">
+                  <button class="roster-filter-btn active" data-filter="all" onclick="setRosterFilter('all')">All (<span id="count-filter-all">649</span>)</button>
+                  <button class="roster-filter-btn red" data-filter="High" onclick="setRosterFilter('High')">High Risk (<span id="count-filter-high">100</span>)</button>
+                  <button class="roster-filter-btn amber" data-filter="Medium" onclick="setRosterFilter('Medium')">Moderate (<span id="count-filter-med">419</span>)</button>
+                  <button class="roster-filter-btn green" data-filter="Low" onclick="setRosterFilter('Low')">Low Risk (<span id="count-filter-low">130</span>)</button>
+                </div>
+                <button class="btn-random-student" onclick="pickRandomRosterStudent()" title="Pick a random student to inspect">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                  <span>Random Student</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Student Roster Grid -->
+            <div class="roster-grid-container" id="roster-grid-container">
+              <!-- Rendered dynamically by static/app.js -->
+            </div>
+
+            <!-- Roster Pagination Footer -->
+            <div class="roster-pagination-row">
+              <span class="roster-page-info" id="roster-page-info">Showing 1-8 of 649 students</span>
+              <div class="roster-page-btns">
+                <button class="roster-page-btn" id="roster-prev-btn" onclick="prevRosterPage()">&larr; Previous</button>
+                <button class="roster-page-btn" id="roster-next-btn" onclick="nextRosterPage()">Next &rarr;</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Active Selected Student Inspection Banner -->
+          <div class="active-student-banner" id="active-student-banner" style="display:none;">
+            <div class="banner-left">
+              <div class="banner-avatar" id="banner-avatar">HT</div>
+              <div class="banner-info">
+                <div class="banner-name-row">
+                  <h4 id="banner-student-name">Student STU-001</h4>
+                  <span class="banner-id-pill" id="banner-student-id">STU-001</span>
+                  <span class="status-pill red" id="banner-risk-tag">High Risk</span>
+                </div>
+                <p id="banner-student-meta">School: GP · Age: 18 · Baseline G1: 0/20 · Absences: 4 days</p>
+              </div>
+            </div>
+            <div class="banner-actions">
+              <button class="btn-banner-action primary" onclick="switchToTab('recommendations')">Intervention Plan</button>
+              <button class="btn-banner-action" onclick="switchToTab('whatif')">What-If Simulator</button>
+              <button class="btn-banner-action danger" onclick="clearSelectedStudent()" title="Clear student selection">Reset Sliders</button>
+            </div>
+          </div>
+
           <div class="archetype-bar">
-            <span class="arch-label">Preset Archetypes:</span>
+            <span class="arch-label">Or Test Preset Persona:</span>
             <div class="arch-chips">
-              <button class="arch-chip" onclick="loadPersona('high_risk')"><span class="chip-dot red"></span> High Risk Profile</button>
-              <button class="arch-chip" onclick="loadPersona('borderline')"><span class="chip-dot amber"></span> Moderate Risk Profile</button>
-              <button class="arch-chip" onclick="loadPersona('thriving')"><span class="chip-dot green"></span> Low Risk Profile</button>
+              <button class="arch-chip" onclick="loadPersona('high_risk')"><span class="chip-dot red"></span> High Risk Persona</button>
+              <button class="arch-chip" onclick="loadPersona('borderline')"><span class="chip-dot amber"></span> Moderate Risk Persona</button>
+              <button class="arch-chip" onclick="loadPersona('thriving')"><span class="chip-dot green"></span> Low Risk Persona</button>
               <button class="arch-chip" onclick="loadPersona('social_drift')"><span class="chip-dot blue"></span> Attendance Slippage</button>
             </div>
           </div>
@@ -473,6 +529,10 @@
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 Load Sample Test Cohort (N=98)
               </button>
+              <button class="btn-soft danger" id="btn-reset-cohort" onclick="resetToFullRoster()" style="display:none;" title="Clear uploaded cohort and return to full 649 enrolled database">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                Reset to Main Roster (649)
+              </button>
               <button class="btn-pill-action" onclick="exportBatchCSV()" id="btn-export-batch" disabled>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 Export Triage Report (CSV)
@@ -549,82 +609,7 @@
           </div>
         </section>
 
-        <!-- Tab 5: Model Validation & Academic Benchmarks -->
-        <section id="tab-analytics" class="tab-panel">
-          <div class="panel-hero-header">
-            <div>
-              <h2>Model Validation & Performance Benchmarks</h2>
-              <p>Academic audit metrics, 5-fold cross-validation results, confusion matrix, and feature importance weights.</p>
-            </div>
-            <a href="/guide" target="_blank" class="btn-soft">View Full Technical Guide</a>
-          </div>
 
-          <div class="cohort-summary-grid">
-            <div class="cohort-kpi-card">
-              <span class="kpi-lbl">Test Accuracy</span>
-              <span class="kpi-val purple-txt">80.6%</span>
-              <span class="kpi-desc">Overall Test Set Accuracy</span>
-            </div>
-            <div class="cohort-kpi-card">
-              <span class="kpi-lbl">Macro F1-Score</span>
-              <span class="kpi-val purple-txt">0.710</span>
-              <span class="kpi-desc">Balanced Multi-Class F1</span>
-            </div>
-            <div class="cohort-kpi-card">
-              <span class="kpi-lbl">Weighted F1</span>
-              <span class="kpi-val purple-txt">0.791</span>
-              <span class="kpi-desc">Support Weighted F1</span>
-            </div>
-            <div class="cohort-kpi-card">
-              <span class="kpi-lbl">Severe Errors</span>
-              <span class="kpi-val green-txt">0.0%</span>
-              <span class="kpi-desc">Zero High-to-Low False Negatives</span>
-            </div>
-          </div>
-
-          <div class="analytics-2col-grid">
-            <div class="soft-card">
-              <div class="card-title-row">
-                <h3>Feature Importance Weights</h3>
-                <span class="card-badge">Random Forest</span>
-              </div>
-              <div class="feature-bar-list" id="feature-importance-bars"></div>
-            </div>
-
-            <div class="soft-card">
-              <div class="card-title-row">
-                <h3>Test Confusion Matrix (N=98)</h3>
-                <span class="card-badge">Test Partition</span>
-              </div>
-              <div class="cm-soft-wrap">
-                <div class="cm-soft-grid">
-                  <div></div>
-                  <div class="cm-col-tag">Pred: High</div>
-                  <div class="cm-col-tag">Pred: Med</div>
-                  <div class="cm-col-tag">Pred: Low</div>
-
-                  <div class="cm-row-tag">True: High (15)</div>
-                  <div class="cm-cell-box hit">5 <span class="cm-sub">(33%)</span></div>
-                  <div class="cm-cell-box miss">10 <span class="cm-sub">(67%)</span></div>
-                  <div class="cm-cell-box zero">0 <span class="cm-sub">(0%)</span></div>
-
-                  <div class="cm-row-tag">True: Med (63)</div>
-                  <div class="cm-cell-box miss">3 <span class="cm-sub">(5%)</span></div>
-                  <div class="cm-cell-box hit">59 <span class="cm-sub">(94%)</span></div>
-                  <div class="cm-cell-box miss">1 <span class="cm-sub">(1%)</span></div>
-
-                  <div class="cm-row-tag">True: Low (20)</div>
-                  <div class="cm-cell-box zero">0 <span class="cm-sub">(0%)</span></div>
-                  <div class="cm-cell-box miss">5 <span class="cm-sub">(25%)</span></div>
-                  <div class="cm-cell-box hit">15 <span class="cm-sub">(75%)</span></div>
-                </div>
-                <div class="cm-callout">
-                  <strong>Safety Criterion:</strong> The model yielded zero false negatives where a high-risk student was classified as low-risk (0.0%).
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
 
         <!-- Tab 6: History Log -->
         <section id="tab-history" class="tab-panel">
@@ -668,6 +653,6 @@
     </div>
   </div>
 
-  <script src="/static/app.js"></script>
+  <script src="/static/app.js?v=2.1"></script>
 </body>
 </html>

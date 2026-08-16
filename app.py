@@ -77,27 +77,168 @@ async def serve_guide():
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>System & Model Interpretation Guide</title>
+      <title>Smartech | User Guide & Technical Interpretation Manual</title>
       <link rel="preconnect" href="https://fonts.googleapis.com">
-      <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+      <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
       <style>
-        body {{ font-family: 'Plus Jakarta Sans', sans-serif; max-width: 920px; margin: 40px auto; padding: 0 24px; line-height: 1.65; color: #2D2535; background: #FAF8F5; }}
-        pre {{ background: #EFECE6; padding: 16px; border-radius: 12px; overflow-x: auto; font-family: 'JetBrains Mono', monospace; font-size: 13px; border: 1px solid #E5DFD7; }}
-        code {{ font-family: 'JetBrains Mono', monospace; font-size: 13px; background: #EFECE6; padding: 2px 6px; border-radius: 6px; }}
-        table {{ width: 100%; border-collapse: collapse; margin: 24px 0; background: #FFFFFF; border-radius: 12px; overflow: hidden; border: 1px solid #E5DFD7; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }}
-        th, td {{ padding: 12px 16px; text-align: left; border-bottom: 1px solid #EFECE6; font-size: 13.5px; }}
-        th {{ background: #EFECE6; font-weight: 700; color: #2D2535; }}
-        h1, h2, h3 {{ color: #2D2535; font-weight: 700; }}
-        h1 {{ border-bottom: 2px solid #E5DFD7; padding-bottom: 12px; font-size: 26px; }}
-        .badge {{ background: #6C5CE7; color: white; padding: 2px 8px; border-radius: 999px; font-size: 12px; }}
-        .back-btn {{ display: inline-flex; align-items: center; gap: 8px; background: #2D2535; color: white; text-decoration: none; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; margin-bottom: 24px; }}
-        .back-btn:hover {{ background: #453A50; }}
+        :root {{
+          --bg: #FAF8F5;
+          --surface: #FFFFFF;
+          --border: #E8E2D9;
+          --text: #2D2535;
+          --text-muted: #6B5E78;
+          --brand: #6C5CE7;
+          --brand-dark: #5846E2;
+          --green: #10B981;
+          --amber: #F59E0B;
+          --red: #EF4444;
+        }}
+        * {{ box-sizing: border-box; }}
+        body {{
+          font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+          max-width: 960px;
+          margin: 0 auto;
+          padding: 40px 24px 80px 24px;
+          line-height: 1.7;
+          color: var(--text);
+          background: var(--bg);
+        }}
+        .guide-header {{
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 32px;
+          padding-bottom: 20px;
+          border-bottom: 1px solid var(--border);
+        }}
+        .back-btn {{
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          background: var(--surface);
+          color: var(--text);
+          text-decoration: none;
+          padding: 10px 18px;
+          border-radius: 10px;
+          font-size: 13px;
+          font-weight: 600;
+          border: 1px solid var(--border);
+          box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+          transition: all 0.15s ease;
+        }}
+        .back-btn:hover {{
+          background: #F3EFE9;
+          border-color: #D6CCC0;
+        }}
+        .guide-container {{
+          background: var(--surface);
+          padding: 48px;
+          border-radius: 16px;
+          border: 1px solid var(--border);
+          box-shadow: 0 4px 20px rgba(45, 37, 53, 0.04);
+        }}
+        h1 {{
+          font-size: 28px;
+          font-weight: 800;
+          color: var(--text);
+          margin-top: 0;
+          margin-bottom: 8px;
+          letter-spacing: -0.02em;
+        }}
+        h2 {{
+          font-size: 20px;
+          font-weight: 700;
+          color: var(--text);
+          margin-top: 36px;
+          margin-bottom: 16px;
+          padding-bottom: 8px;
+          border-bottom: 1px solid var(--border);
+        }}
+        h3 {{
+          font-size: 16px;
+          font-weight: 600;
+          color: var(--text);
+          margin-top: 24px;
+          margin-bottom: 12px;
+        }}
+        p, li {{
+          font-size: 14.5px;
+          color: #3C3147;
+        }}
+        table {{
+          width: 100%;
+          border-collapse: collapse;
+          margin: 24px 0;
+          font-size: 13.5px;
+          border: 1px solid var(--border);
+          border-radius: 8px;
+          overflow: hidden;
+        }}
+        th, td {{
+          padding: 12px 16px;
+          text-align: left;
+          border-bottom: 1px solid var(--border);
+        }}
+        th {{
+          background: #F5F1EB;
+          font-weight: 700;
+          color: var(--text);
+        }}
+        tr:nth-child(even) {{
+          background: #FCFBF9;
+        }}
+        code {{
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 12.5px;
+          background: #F2EDE4;
+          padding: 2px 6px;
+          border-radius: 4px;
+          color: #554466;
+        }}
+        pre {{
+          background: #2D2535;
+          color: #F8F7F4;
+          padding: 18px;
+          border-radius: 10px;
+          overflow-x: auto;
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 13px;
+        }}
+        pre code {{
+          background: transparent;
+          color: inherit;
+          padding: 0;
+        }}
+        blockquote {{
+          margin: 20px 0;
+          padding: 16px 20px;
+          background: #F3EFFF;
+          border-left: 4px solid var(--brand);
+          border-radius: 0 10px 10px 0;
+          color: #4C3C70;
+        }}
+        blockquote p {{
+          margin: 0;
+          color: #4C3C70;
+        }}
+        hr {{
+          border: none;
+          border-top: 1px solid var(--border);
+          margin: 32px 0;
+        }}
       </style>
       <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     </head>
     <body>
-      <a href="/" class="back-btn">← Back to Dashboard</a>
-      <div id="content"></div>
+      <div class="guide-header">
+        <a href="/" class="back-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          Back to Live Portal
+        </a>
+        <span style="font-size:12.5px; font-weight:600; color:var(--text-muted);">Ashesi CS 254 · Group 5 Final Project</span>
+      </div>
+      <main class="guide-container" id="content"></main>
       <script>
         document.getElementById('content').innerHTML = marked.parse({repr(md_text)});
       </script>

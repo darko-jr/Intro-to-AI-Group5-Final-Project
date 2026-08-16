@@ -13,6 +13,16 @@ const state = {
   },
   lastPrediction: null,
   whatIfBaseline: null,
+  activeStudent: null,
+  roster: {
+    all: [],
+    filtered: [],
+    page: 1,
+    pageSize: 8,
+    filter: 'all',
+    search: '',
+    selectedId: null
+  },
   batchData: [],
   batchFilter: 'all',
   history: JSON.parse(localStorage.getItem('student_risk_history_v3') || '[]'),
@@ -34,13 +44,17 @@ const METADATA = {
 
 const MEDU_NAMES = ['None (0)', 'Primary (1)', 'Middle (2)', 'Secondary (3)', 'Higher Ed (4)'];
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   setupSidebarNavigation();
   setupDropzone();
   updateHistoryCount();
   renderHistoryTable();
-  runPrediction();
-  loadFeatureImportance();
+  await initRoster();
+  
+  const savedTab = localStorage.getItem('smartech_saved_active_tab');
+  if (savedTab && document.getElementById(`tab-${savedTab}`)) {
+    switchToTab(savedTab);
+  }
 });
 
 function setupSidebarNavigation() {
@@ -53,6 +67,10 @@ function setupSidebarNavigation() {
 }
 
 function switchToTab(tabName) {
+  try {
+    localStorage.setItem('smartech_saved_active_tab', tabName);
+  } catch (e) {}
+
   document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
 
@@ -338,36 +356,55 @@ async function handleGlobalSearch(query) {
 
   let html = '';
 
-  // 1. Fetch Matching Students from Database API
-  try {
-    const res = await fetch(`/api/students?q=${encodeURIComponent(q)}&limit=6`);
-    if (res.ok) {
-      const data = await res.json();
-      const students = data.students || [];
-      
-      if (students.length > 0) {
-        html += '<div class="search-category-title">Student Database Profiles</div>';
-        students.forEach(s => {
-          html += `
-            <div class="search-dropdown-item" onclick="loadStudentProfile('${s.id}')">
-              <div class="search-item-left">
-                <div class="search-item-icon" style="background:var(--bg-card-alt); font-weight:bold; font-size:10px;">${s.id.split('-')[1]}</div>
-                <div class="search-item-info">
-                  <span class="search-item-name">${s.name} <span style="font-size:11px; font-weight:normal; color:var(--text-muted);">(${s.id})</span></span>
-                  <span class="search-item-desc">G1: ${s.G1}/20 | Absences: ${s.absences}d | Failures: ${s.failures}</span>
-                </div>
-              </div>
-              <span class="search-student-badge ${s.predicted_class}">${s.predicted_class} Risk</span>
-            </div>
-          `;
-        });
-      }
-    }
-  } catch (err) {
-    console.error('Error fetching students:', err);
+  // 1. Search Active Enrolled Students (Local Roster + API Fallback)
+  let matchingStudents = [];
+  if (state.roster.all && state.roster.all.length > 0) {
+    matchingStudents = state.roster.all.filter(s => {
+      if (!q) return true;
+      return (
+        s.id.toLowerCase().includes(q) ||
+        s.name.toLowerCase().includes(q) ||
+        s.predicted_class.toLowerCase().includes(q) ||
+        (q === 'high' && s.predicted_class === 'High') ||
+        (q === 'fail' && s.failures > 0) ||
+        (q === 'absent' && s.absences >= 8)
+      );
+    }).slice(0, 6);
   }
 
-  // 2. Personas
+  if (matchingStudents.length === 0 && q) {
+    try {
+      const res = await fetch(`/api/students?q=${encodeURIComponent(q)}&limit=6`);
+      if (res.ok) {
+        const data = await res.json();
+        matchingStudents = data.students || [];
+      }
+    } catch (err) {
+      console.error('Error fetching students:', err);
+    }
+  }
+
+  if (matchingStudents.length > 0) {
+    html += '<div class="search-category-title">Enrolled Students &amp; Profiles</div>';
+    matchingStudents.forEach(s => {
+      const idTag = s.id.replace('STU-', '').slice(0, 4);
+      const displayName = (s.name && s.name !== s.id) ? `${s.name} <span style="font-size:11px; font-weight:normal; color:var(--text-muted);">(${s.id})</span>` : s.id;
+      html += `
+        <div class="search-dropdown-item" onclick="selectRosterStudent('${s.id}'); clearGlobalSearch();">
+          <div class="search-item-left">
+            <div class="search-item-icon" style="background:var(--purple-light); color:var(--purple-brand); font-weight:700; font-size:10px;">${idTag}</div>
+            <div class="search-item-info">
+              <span class="search-item-name">${displayName}</span>
+              <span class="search-item-desc">G1: ${s.G1}/20 | Absences: ${s.absences}d | Failures: ${s.failures}</span>
+            </div>
+          </div>
+          <span class="search-student-badge ${s.predicted_class}">${s.predicted_class} Risk</span>
+        </div>
+      `;
+    });
+  }
+
+  // 2. Preset Personas
   const personas = [
     { key: 'high_risk', name: 'High Risk Preset', desc: 'G1: 6, Failures: 2, Absences: 18' },
     { key: 'borderline', name: 'Moderate Risk Preset', desc: 'G1: 10, Failures: 1, Absences: 8' },
@@ -380,7 +417,7 @@ async function handleGlobalSearch(query) {
     html += '<div class="search-category-title">Preset Personas</div>';
     filteredPersonas.forEach(p => {
       html += `
-        <div class="search-dropdown-item" onclick="loadPersona('${p.key}'); switchToTab('dashboard');">
+        <div class="search-dropdown-item" onclick="loadPersona('${p.key}'); switchToTab('dashboard'); clearGlobalSearch();">
           <div class="search-item-left">
             <div class="search-item-icon" style="background:var(--bg-card-alt);">&#9679;</div>
             <div class="search-item-info">
@@ -399,7 +436,6 @@ async function handleGlobalSearch(query) {
     { tab: 'recommendations', name: 'Intervention Plan', desc: '4-Pillar prescriptive action plan and checklist' },
     { tab: 'whatif', name: 'What-If Scenario Simulator', desc: 'Model trajectory reduction from student improvements' },
     { tab: 'cohort', name: 'Cohort Batch Triage', desc: 'Upload CSV dataset and triage entire cohort' },
-    { tab: 'analytics', name: 'Model Validation', desc: 'Accuracy metrics, confusion matrix, and feature weights' },
     { tab: 'history', name: 'Session History Log', desc: 'View and export logged student assessments' }
   ];
 
@@ -428,43 +464,325 @@ async function handleGlobalSearch(query) {
   dropdown.innerHTML = html;
 }
 
+function handleGlobalSearchEnter() {
+  const input = document.getElementById('global-search');
+  if (!input) return;
+  const q = input.value.toLowerCase().trim();
+  if (!q) return;
+
+  if (state.roster.all && state.roster.all.length > 0) {
+    const match = state.roster.all.find(s =>
+      s.id.toLowerCase().includes(q) ||
+      s.name.toLowerCase().includes(q) ||
+      s.predicted_class.toLowerCase() === q
+    );
+    if (match) {
+      selectRosterStudent(match.id);
+      clearGlobalSearch();
+      switchToTab('dashboard');
+    }
+  }
+}
+
+window.handleGlobalSearchEnter = handleGlobalSearchEnter;
+window.handleGlobalSearch = handleGlobalSearch;
+
+async function initRoster() {
+  try {
+    // 1. Check if a cohort batch was previously loaded/uploaded
+    const savedCohortRaw = localStorage.getItem('smartech_saved_cohort_batch');
+    if (savedCohortRaw) {
+      try {
+        const savedCohort = JSON.parse(savedCohortRaw);
+        if (savedCohort && savedCohort.data && savedCohort.data.length > 0) {
+          displayBatchResults(savedCohort, false);
+        }
+      } catch (e) {
+        console.warn('Failed parsing saved cohort:', e);
+      }
+    }
+
+    // 2. If no cohort was loaded, fetch the default 649 enrolled database
+    if (!state.roster.all || state.roster.all.length === 0) {
+      const res = await fetch('/api/students?limit=649');
+      if (res.ok) {
+        const data = await res.json();
+        state.roster.all = data.students || [];
+        updateRosterFilterCounts();
+        applyRosterFilters();
+      }
+    }
+
+    // 3. Restore previously selected student if saved
+    const savedStudentId = localStorage.getItem('smartech_saved_selected_student_id');
+    if (savedStudentId) {
+      await loadStudentProfile(savedStudentId);
+    } else if (!state.lastPrediction) {
+      await runPrediction();
+    }
+  } catch (err) {
+    console.error('Error initializing student roster:', err);
+  }
+}
+
+function updateRosterFilterCounts() {
+  const total = state.roster.all.length;
+  const high = state.roster.all.filter(s => s.predicted_class === 'High').length;
+  const med = state.roster.all.filter(s => s.predicted_class === 'Medium').length;
+  const low = state.roster.all.filter(s => s.predicted_class === 'Low').length;
+
+  const totalEl = document.getElementById('roster-total-count');
+  const allEl = document.getElementById('count-filter-all');
+  const highEl = document.getElementById('count-filter-high');
+  const medEl = document.getElementById('count-filter-med');
+  const lowEl = document.getElementById('count-filter-low');
+
+  if (totalEl) totalEl.textContent = `${total} Enrolled`;
+  if (allEl) allEl.textContent = total;
+  if (highEl) highEl.textContent = high;
+  if (medEl) medEl.textContent = med;
+  if (lowEl) lowEl.textContent = low;
+}
+
+function setRosterFilter(filterType) {
+  state.roster.filter = filterType;
+  state.roster.page = 1;
+
+  document.querySelectorAll('.roster-filter-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.filter === filterType);
+  });
+
+  applyRosterFilters();
+}
+
+function handleRosterSearch(query) {
+  state.roster.search = (query || '').toLowerCase().trim();
+  state.roster.page = 1;
+  applyRosterFilters();
+}
+
+function applyRosterFilters() {
+  const f = state.roster.filter;
+  const q = state.roster.search;
+
+  state.roster.filtered = state.roster.all.filter(s => {
+    const matchFilter = (f === 'all' || s.predicted_class === f);
+    const matchSearch = (!q || s.id.toLowerCase().includes(q) || s.name.toLowerCase().includes(q));
+    return matchFilter && matchSearch;
+  });
+
+  renderRosterGrid();
+}
+
+function renderRosterGrid() {
+  const container = document.getElementById('roster-grid-container');
+  const pageInfo = document.getElementById('roster-page-info');
+  const prevBtn = document.getElementById('roster-prev-btn');
+  const nextBtn = document.getElementById('roster-next-btn');
+
+  if (!container) return;
+
+  const total = state.roster.filtered.length;
+  const pageSize = state.roster.pageSize;
+  const totalPages = Math.ceil(total / pageSize) || 1;
+
+  if (state.roster.page > totalPages) state.roster.page = totalPages;
+  if (state.roster.page < 1) state.roster.page = 1;
+
+  const page = state.roster.page;
+  const start = (page - 1) * pageSize;
+  const end = Math.min(start + pageSize, total);
+
+  const studentsToShow = state.roster.filtered.slice(start, end);
+
+  if (studentsToShow.length === 0) {
+    container.innerHTML = `<div style="grid-column:1/-1; padding:20px; text-align:center; color:var(--text-muted); font-size:12.5px;">No students match the current filter or search criteria.</div>`;
+  } else {
+    container.innerHTML = studentsToShow.map(s => {
+      const isSelected = state.roster.selectedId === s.id;
+      const idTag = s.id.replace('STU-', '').slice(0, 4);
+      const displayName = (s.name && s.name !== s.id) ? s.name : s.id;
+      return `
+        <div class="roster-student-card ${isSelected ? 'selected' : ''}" onclick="selectRosterStudent('${s.id}')">
+          <div class="roster-card-top">
+            <div class="roster-card-avatar-group">
+              <div class="roster-card-avatar">${idTag}</div>
+              <div class="roster-card-name-box">
+                <span class="roster-card-name" title="${displayName}">${displayName}</span>
+                <span class="roster-card-id">${s.id}</span>
+              </div>
+            </div>
+            <span class="roster-card-pill ${s.predicted_class}">${s.predicted_class} Risk</span>
+          </div>
+          <div class="roster-card-stats">
+            <span>G1: <strong>${s.G1}/20</strong></span>
+            <span>Abs: <strong>${s.absences}d</strong></span>
+            <span>Fail: <strong>${s.failures}</strong></span>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  if (pageInfo) {
+    pageInfo.textContent = total === 0 ? 'Showing 0 of 0 students' : `Showing ${start + 1}-${end} of ${total} students (Page ${page}/${totalPages})`;
+  }
+
+  if (prevBtn) prevBtn.disabled = page <= 1;
+  if (nextBtn) nextBtn.disabled = page >= totalPages;
+}
+
+function nextRosterPage() {
+  const totalPages = Math.ceil(state.roster.filtered.length / state.roster.pageSize);
+  if (state.roster.page < totalPages) {
+    state.roster.page++;
+    renderRosterGrid();
+  }
+}
+
+function prevRosterPage() {
+  if (state.roster.page > 1) {
+    state.roster.page--;
+    renderRosterGrid();
+  }
+}
+
+async function pickRandomRosterStudent() {
+  if (!state.roster.all || state.roster.all.length === 0) {
+    await initRoster();
+  }
+  const pool = (state.roster.filtered && state.roster.filtered.length > 0) ? state.roster.filtered : state.roster.all;
+  if (!pool || pool.length === 0) return;
+  
+  const randomIndex = Math.floor(Math.random() * pool.length);
+  const student = pool[randomIndex];
+  await selectRosterStudent(student.id);
+}
+
+async function selectRosterStudent(studentId) {
+  state.roster.selectedId = studentId;
+  try {
+    localStorage.setItem('smartech_saved_selected_student_id', studentId);
+  } catch (e) {}
+  await loadStudentProfile(studentId);
+  renderRosterGrid();
+}
+
+function clearSelectedStudent() {
+  state.roster.selectedId = null;
+  try {
+    localStorage.removeItem('smartech_saved_selected_student_id');
+  } catch (e) {}
+  clearActiveStudent();
+  const banner = document.getElementById('active-student-banner');
+  if (banner) banner.style.display = 'none';
+  renderRosterGrid();
+  resetForm();
+}
+
 async function loadStudentProfile(studentId) {
   try {
+    let student = state.roster.all.find(s => s.id === studentId);
+    
+    // Fetch full student record from API
     const res = await fetch(`/api/students/${studentId}`);
-    if (!res.ok) throw new Error('Student not found');
-    const data = await res.json();
+    if (res.ok) {
+      student = await res.json();
+    }
+    
+    if (!student || !student.inputs) {
+      console.error('Student inputs not found for', studentId);
+      return;
+    }
 
-    state.activeStudent = data;
+    state.activeStudent = student;
+    state.roster.selectedId = student.id;
 
-    // Load inputs
-    Object.entries(data.inputs).forEach(([feat, val]) => {
+    // 1. Immediately apply all 10 feature values to state.currentInputs
+    state.currentInputs = { ...student.inputs };
+
+    // 2. Immediately update all slider positions and display text badges
+    Object.entries(student.inputs).forEach(([feat, val]) => {
+      const numVal = parseFloat(val);
       const inputEl = document.getElementById(`inp-${feat}`);
       if (inputEl) {
-        inputEl.value = val;
-        updateInput(feat, val);
+        inputEl.value = numVal;
+      }
+      
+      const disp = document.getElementById(`val-${feat}`);
+      if (disp) {
+        if (feat === 'Medu') {
+          disp.textContent = MEDU_NAMES[Math.min(parseInt(numVal), 4)];
+        } else {
+          disp.textContent = `${numVal}${METADATA[feat]?.suffix || ''}`;
+        }
       }
     });
 
-    // Update active student pill
+    // 3. Update Top-Nav Active Student Pill
     const pill = document.getElementById('active-student-pill');
     const pillText = document.getElementById('active-student-text');
     const saveBtn = document.getElementById('btn-save-student');
-
     if (pill && pillText) {
-      pillText.textContent = `Active: ${data.id} · ${data.name}`;
+      pillText.textContent = `Active: ${student.id}`;
       pill.style.display = 'flex';
     }
     if (saveBtn) saveBtn.style.display = 'block';
+
+    // 4. Update Active Student Inspection Banner on Dashboard
+    const banner = document.getElementById('active-student-banner');
+    const bAvatar = document.getElementById('banner-avatar');
+    const bName = document.getElementById('banner-student-name');
+    const bId = document.getElementById('banner-student-id');
+    const bRisk = document.getElementById('banner-risk-tag');
+    const bMeta = document.getElementById('banner-student-meta');
+
+    if (banner) {
+      const idTag = student.id.replace('STU-', '').slice(0, 4);
+      const displayName = (student.name && student.name !== student.id) ? student.name : `Student ${student.id}`;
+      const pClass = (student.prediction && student.prediction.predicted_class) || student.predicted_class || 'Medium';
+      const conf = (student.prediction && student.prediction.confidence) || student.confidence || 85;
+
+      if (bAvatar) bAvatar.textContent = idTag;
+      if (bName) bName.textContent = displayName;
+      if (bId) bId.textContent = student.id;
+      if (bRisk) {
+        bRisk.textContent = `${pClass} Risk (${conf}% Certainty)`;
+        bRisk.className = `status-pill ${pClass === 'High' ? 'red' : (pClass === 'Low' ? 'green' : '')}`;
+      }
+      if (bMeta) {
+        bMeta.textContent = `School: ${student.school || 'GP'} · Age: ${student.inputs.age} · Baseline G1: ${student.inputs.G1}/20 · Absences: ${student.inputs.absences} days · Failures: ${student.inputs.failures}`;
+      }
+      banner.style.display = 'flex';
+    }
+
+    // 5. Run prediction immediately and update gauges, XAI, and recommendations
+    if (student.prediction) {
+      state.lastPrediction = student.prediction;
+      renderPredictionResults(student.prediction);
+    } else {
+      await runPrediction();
+    }
 
     // Clear preset chips active state
     document.querySelectorAll('.arch-chip').forEach(c => c.classList.remove('active'));
 
     clearGlobalSearch();
-    switchToTab('dashboard');
+    renderRosterGrid();
   } catch (err) {
     console.error('Error loading student profile:', err);
   }
 }
+
+// Bind to window for guaranteed inline onclick execution
+window.selectRosterStudent = selectRosterStudent;
+window.pickRandomRosterStudent = pickRandomRosterStudent;
+window.clearSelectedStudent = clearSelectedStudent;
+window.setRosterFilter = setRosterFilter;
+window.handleRosterSearch = handleRosterSearch;
+window.nextRosterPage = nextRosterPage;
+window.prevRosterPage = prevRosterPage;
+window.loadStudentProfile = loadStudentProfile;
 
 function clearActiveStudent() {
   state.activeStudent = null;
@@ -516,61 +834,12 @@ function clearGlobalSearch() {
   if (clearBtn) clearBtn.style.display = 'none';
 }
 
-function toggleNotificationsDropdown() {
-  const dropdown = document.getElementById('notifications-dropdown-menu');
-  if (!dropdown) return;
-
-  if (dropdown.style.display === 'block') {
-    dropdown.style.display = 'none';
-    return;
-  }
-
-  // Render notifications
-  const pred = state.lastPrediction;
-  const currentRisk = pred ? pred.predicted_class : 'Medium';
-  const conf = pred ? pred.confidence : 80;
-  const historyLen = state.history.length;
-
-  dropdown.innerHTML = `
-    <div class="notif-header">
-      <span>System Alerts & Notifications</span>
-      <span style="font-size:10.5px; color:var(--text-muted);">Active Session</span>
-    </div>
-    <div class="notif-list">
-      <div class="notif-item">
-        <span class="notif-item-title">Current Profile: ${currentRisk} Risk</span>
-        <span style="color:var(--text-secondary);">Model is predicting with ${conf}% certainty.</span>
-        <span class="notif-item-time">Just now</span>
-      </div>
-      <div class="notif-item">
-        <span class="notif-item-title">Model Status: Sprint 2 Tuned</span>
-        <span style="color:var(--text-secondary);">Random Forest running with 80.6% test accuracy and 0.0% critical false negatives.</span>
-        <span class="notif-item-time">Active</span>
-      </div>
-      <div class="notif-item">
-        <span class="notif-item-title">Session Audit Log</span>
-        <span style="color:var(--text-secondary);">${historyLen} student assessment${historyLen === 1 ? '' : 's'} recorded.</span>
-        <span class="notif-item-time">${historyLen > 0 ? 'Logged' : 'No records yet'}</span>
-      </div>
-    </div>
-  `;
-
-  dropdown.style.display = 'block';
-}
-
-// Close dropdowns on outside click
+// Close search dropdown on outside click
 document.addEventListener('click', (e) => {
   const searchContainer = document.querySelector('.search-container');
-  const notifWrapper = document.querySelector('.nav-action-wrapper');
-  
   if (searchContainer && !searchContainer.contains(e.target)) {
     const dropdown = document.getElementById('search-dropdown-menu');
     if (dropdown) dropdown.style.display = 'none';
-  }
-
-  if (notifWrapper && !notifWrapper.contains(e.target)) {
-    const notifDropdown = document.getElementById('notifications-dropdown-menu');
-    if (notifDropdown) notifDropdown.style.display = 'none';
   }
 });
 
@@ -752,20 +1021,88 @@ function handleCSVUpload(files) {
   reader.readAsText(file);
 }
 
-function displayBatchResults(data) {
+function displayBatchResults(data, shouldPersist = true) {
   state.batchData = data.data || [];
+  if (shouldPersist) {
+    try {
+      localStorage.setItem('smartech_saved_cohort_batch', JSON.stringify(data));
+    } catch (e) {}
+  }
   
-  document.getElementById('batch-kpis').style.display = 'grid';
-  document.getElementById('batch-table-wrap').style.display = 'block';
-  document.getElementById('btn-export-batch').removeAttribute('disabled');
+  const kpis = document.getElementById('batch-kpis');
+  const tableWrap = document.getElementById('batch-table-wrap');
+  const exportBtn = document.getElementById('btn-export-batch');
+  const resetBtn = document.getElementById('btn-reset-cohort');
 
-  document.getElementById('kpi-total').textContent = data.total_students;
-  document.getElementById('kpi-high').textContent = `${data.counts.High} (${data.percentages.High}%)`;
-  document.getElementById('kpi-med').textContent = `${data.counts.Medium} (${data.percentages.Medium}%)`;
-  document.getElementById('kpi-low').textContent = `${data.counts.Low} (${data.percentages.Low}%)`;
+  if (kpis) kpis.style.display = 'grid';
+  if (tableWrap) tableWrap.style.display = 'block';
+  if (exportBtn) exportBtn.removeAttribute('disabled');
+  if (resetBtn) resetBtn.style.display = 'inline-flex';
+
+  const kTotal = document.getElementById('kpi-total');
+  const kHigh = document.getElementById('kpi-high');
+  const kMed = document.getElementById('kpi-med');
+  const kLow = document.getElementById('kpi-low');
+
+  if (kTotal) kTotal.textContent = data.total_students;
+  if (kHigh) kHigh.textContent = `${data.counts.High} (${data.percentages.High}%)`;
+  if (kMed) kMed.textContent = `${data.counts.Medium} (${data.percentages.Medium}%)`;
+  if (kLow) kLow.textContent = `${data.counts.Low} (${data.percentages.Low}%)`;
 
   renderBatchTable(state.batchData);
+
+  // Sync uploaded batch into the Dashboard Student Roster
+  if (state.batchData.length > 0) {
+    state.roster.all = state.batchData.map(r => {
+      const existing = state.roster.all.find(s => s.id === r['Student ID']);
+      const studentName = r['Name'] || (existing ? existing.name : `Student ${r['Student ID']}`);
+      return {
+        id: r['Student ID'],
+        name: studentName,
+        predicted_class: r['Predicted Risk'],
+        confidence: parseFloat(r['Confidence']) || 85,
+        risk_score: r['Risk Score'] || 50,
+        G1: r['G1 Grade'],
+        absences: r['Absences'],
+        failures: r['Failures'],
+        inputs: {
+          G1: r['G1 Grade'],
+          failures: r['Failures'],
+          absences: r['Absences'],
+          age: r['Age'] || 17,
+          health: r['Health'] || 4,
+          freetime: 3,
+          Walc: 1,
+          goout: 3,
+          Medu: 2,
+          famrel: 4
+        }
+      };
+    });
+    updateRosterFilterCounts();
+    applyRosterFilters();
+  }
 }
+
+async function resetToFullRoster() {
+  try {
+    localStorage.removeItem('smartech_saved_cohort_batch');
+  } catch (e) {}
+  state.batchData = [];
+  const kpis = document.getElementById('batch-kpis');
+  const tableWrap = document.getElementById('batch-table-wrap');
+  const exportBtn = document.getElementById('btn-export-batch');
+  const resetBtn = document.getElementById('btn-reset-cohort');
+
+  if (kpis) kpis.style.display = 'none';
+  if (tableWrap) tableWrap.style.display = 'none';
+  if (exportBtn) exportBtn.setAttribute('disabled', 'true');
+  if (resetBtn) resetBtn.style.display = 'none';
+
+  state.roster.all = [];
+  await initRoster();
+}
+window.resetToFullRoster = resetToFullRoster;
 
 function renderBatchTable(rows) {
   const tbody = document.getElementById('batch-tbody');
@@ -778,8 +1115,9 @@ function renderBatchTable(rows) {
 
   rows.forEach(r => {
     const tr = document.createElement('tr');
+    const nameSub = r['Name'] ? `<div style="font-size:11px; color:var(--text-muted); font-weight:normal;">${r['Name']}</div>` : '';
     tr.innerHTML = `
-      <td><strong>${r['Student ID']}</strong></td>
+      <td><strong>${r['Student ID']}</strong>${nameSub}</td>
       <td><span class="risk-tag ${r['Predicted Risk']}">${r['Predicted Risk']}</span></td>
       <td>${r['Confidence']}</td>
       <td><strong>${r['Risk Score']}</strong></td>
