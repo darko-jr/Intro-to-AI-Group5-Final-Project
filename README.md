@@ -1,8 +1,5 @@
 # Smartech: Student Academic Risk Early-Warning & Decision Support System
 
-**Ashesi University · Department of Computer Science & Information Systems**  
-**CS 254: Introduction to Artificial Intelligence · End of Semester Project (Cohort 2026)**  
-**Group 5 Members:** Daniel, Victoria, Esbert, and Vera
 
 ---
 
