@@ -185,6 +185,32 @@ async def api_model_info():
     })
 
 
+@app.get("/api/students")
+async def api_get_students(q: str = None, limit: int = 15):
+    students = engine.get_students(query=q, limit=limit)
+    return JSONResponse({"total": len(students), "students": students})
+
+
+@app.get("/api/students/{student_id}")
+async def api_get_student(student_id: str):
+    student = engine.get_student_by_id(student_id)
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+    return JSONResponse(student)
+
+
+@app.put("/api/students/{student_id}")
+async def api_update_student(student_id: str, request: Request):
+    try:
+        data = await request.json()
+        student = engine.update_student(student_id, data)
+        if not student:
+            raise HTTPException(status_code=404, detail="Student not found")
+        return JSONResponse({"status": "success", "student": student})
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 def find_open_port(default_port: int = 7860) -> int:
     import socket
     port = default_port

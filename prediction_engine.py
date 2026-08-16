@@ -179,7 +179,9 @@ class StudentRiskEngine:
         self.scaler = None
         self.top_features = ORDERED_FEATURES
         self.classes = ["High", "Low", "Medium"]
+        self.students_db = []
         self._load_pipeline()
+        self._init_students_db()
 
     def _load_pipeline(self):
         pipeline_file = _find_file(self.model_path)
@@ -503,6 +505,130 @@ class StudentRiskEngine:
             "avg_risk_score": round(res_df["Risk Score"].mean(), 1) if total > 0 else 0,
             "data": res_df
         }
+
+    def _init_students_db(self):
+        self.students_db = []
+        dataset_path = _find_file("student-por.csv")
+        
+        FIRST_NAMES_F = ["Ana", "Beatriz", "Carolina", "Diana", "Elena", "Filipa", "Helena", "Inês", "Joana", "Leonor", "Maria", "Margarida", "Mariana", "Rita", "Sofia"]
+        FIRST_NAMES_M = ["Afonso", "Bernardo", "Daniel", "Diogo", "Eduardo", "Gabriel", "Gonçalo", "João", "Lucas", "Martim", "Miguel", "Nuno", "Pedro", "Rafael", "Tiago", "Vasco"]
+        SURNAMES = ["Silva", "Santos", "Ferreira", "Pereira", "Oliveira", "Costa", "Rodrigues", "Martins", "Jesus", "Sousa", "Fernandes", "Gonçalves", "Gomes", "Lopes", "Marques", "Alves", "Ribeiro", "Pinto", "Carvalho", "Teixeira"]
+
+        if os.path.exists(dataset_path):
+            try:
+                df = pd.read_csv(dataset_path, sep=";" if ";" in open(dataset_path).readline() else ",")
+                for idx, row in df.iterrows():
+                    stu_id = f"STU-{idx+1:03d}"
+                    sex = str(row.get("sex", "F")).strip()
+                    rng = np.random.RandomState(idx * 7 + 42)
+                    first = rng.choice(FIRST_NAMES_F if sex == "F" else FIRST_NAMES_M)
+                    last = rng.choice(SURNAMES)
+                    full_name = f"{first} {last}"
+                    
+                    g3 = float(row.get("G3", 11))
+                    actual_risk = "High" if g3 <= 9 else ("Low" if g3 >= 15 else "Medium")
+                    
+                    student_inputs = {}
+                    for feat in self.top_features:
+                        student_inputs[feat] = float(row.get(feat, FEATURE_METADATA[feat]["default"]))
+                        
+                    self.students_db.append({
+                        "id": stu_id,
+                        "name": full_name,
+                        "sex": sex,
+                        "school": str(row.get("school", "GP")),
+                        "inputs": student_inputs,
+                        "actual_g3": int(g3),
+                        "actual_risk": actual_risk
+                    })
+            except Exception as e:
+                print("Error loading students DB from CSV:", e)
+                
+        if not self.students_db:
+            sample_names = ["Ana Silva", "Lucas Ferreira", "Beatriz Santos", "Diogo Costa", "Helena Martins", "Pedro Oliveira"]
+            for i, name in enumerate(sample_names):
+                p_key = list(PRESET_PERSONAS.keys())[i % len(PRESET_PERSONAS)]
+                inputs = dict(PRESET_PERSONAS[p_key]["values"])
+                self.students_db.append({
+                    "id": f"STU-{i+1:03d}",
+                    "name": name,
+                    "sex": "F" if i % 2 == 0 else "M",
+                    "school": "GP",
+                    "inputs": inputs,
+                    "actual_g3": 11,
+                    "actual_risk": "Medium"
+                })
+
+    def get_students(self, query: str = None, limit: int = 15) -> List[Dict[str, Any]]:
+        results = []
+        q = (query or "").lower().strip()
+        
+        for student in self.students_db:
+            matches = True
+            if q:
+                matches = (
+                    q in student["id"].lower() or
+                    q in student["name"].lower() or
+                    q in student["actual_risk"].lower() or
+                    (q == "high" and student["inputs"]["G1"] <= 9) or
+                    (q == "absence" and student["inputs"]["absences"] >= 8) or
+                    (q == "failure" and student["inputs"]["failures"] > 0)
+                )
+            
+            if matches:
+                pred = self.predict(student["inputs"])
+                primary_concern = pred["contributions"]["risk_drivers"][0]["name"] if pred["contributions"]["risk_drivers"] else "None"
+                urgent_action = pred["recommendations"][0]["action"] if pred["recommendations"] else "Standard Monitoring"
+                
+                results.append({
+                    "id": student["id"],
+                    "name": student["name"],
+                    "sex": student["sex"],
+                    "school": student["school"],
+                    "inputs": student["inputs"],
+                    "predicted_class": pred["predicted_class"],
+                    "confidence": pred["confidence"],
+                    "risk_score": pred["risk_score"],
+                    "G1": student["inputs"]["G1"],
+                    "absences": student["inputs"]["absences"],
+                    "failures": student["inputs"]["failures"],
+                    "primary_concern": primary_concern,
+                    "urgent_action": urgent_action
+                })
+                
+                if len(results) >= limit:
+                    break
+                    
+        return results
+
+    def get_student_by_id(self, student_id: str) -> Dict[str, Any]:
+        for student in self.students_db:
+            if student["id"].lower() == student_id.lower():
+                pred = self.predict(student["inputs"])
+                return {
+                    "id": student["id"],
+                    "name": student["name"],
+                    "sex": student["sex"],
+                    "school": student["school"],
+                    "inputs": student["inputs"],
+                    "prediction": pred
+                }
+        return None
+
+    def update_student(self, student_id: str, updated_inputs: Dict[str, Any]) -> Dict[str, Any]:
+        for student in self.students_db:
+            if student["id"].lower() == student_id.lower():
+                for k, v in updated_inputs.items():
+                    if k in student["inputs"]:
+                        student["inputs"][k] = float(v)
+                pred = self.predict(student["inputs"])
+                return {
+                    "id": student["id"],
+                    "name": student["name"],
+                    "inputs": student["inputs"],
+                    "prediction": pred
+                }
+        return None
 
 
 engine = StudentRiskEngine()

@@ -56,9 +56,9 @@
             <span>Cohort Triage</span>
           </button>
 
-          <button class="nav-item" data-tab="analytics" id="btn-tab-analytics">
+          <button class="nav-item" data-tab="analytics" id="btn-tab-analytics" title="Academic Audit & Model Verification">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-            <span>Model Analytics</span>
+            <span>Model Validation</span>
           </button>
 
           <button class="nav-item" data-tab="history" id="btn-tab-history">
@@ -80,22 +80,40 @@
         
         <header class="top-nav">
           <div class="greeting-box">
-            <h2>Student Risk Early-Warning Portal</h2>
+            <div class="greeting-title-row">
+              <h2>Student Risk Early-Warning Portal</h2>
+              <span class="active-student-pill" id="active-student-pill" style="display:none;" onclick="clearActiveStudent()" title="Click to clear active student selection">
+                <span id="active-student-text">Active: STU-001 · Ana Silva</span>
+                <span class="pill-remove-btn">&times;</span>
+              </span>
+            </div>
+            <span class="portal-status-badge">Tuned Random Forest · 80.6% Accuracy</span>
           </div>
 
-          <div class="search-pill-box">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-            <input type="text" placeholder="Search student profile or quick persona..." id="global-search" oninput="handleQuickSearch(this.value)">
+          <div class="search-container">
+            <div class="search-pill-box">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              <input type="text" placeholder="Search student ID, name, or persona..." id="global-search" oninput="handleGlobalSearch(this.value)" onfocus="handleGlobalSearch(this.value)" autocomplete="off">
+              <button class="search-clear-btn" id="search-clear-btn" onclick="clearGlobalSearch()" style="display:none;">&times;</button>
+            </div>
+            <div class="search-dropdown-menu" id="search-dropdown-menu" style="display:none;"></div>
           </div>
 
           <div class="top-nav-actions">
-            <div class="icon-bubble-btn" title="Quick Personas" onclick="cyclePersona()">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-              <span class="bubble-dot"></span>
+            <!-- Notification / Alert Dropdown -->
+            <div class="nav-action-wrapper">
+              <button class="icon-bubble-btn" id="btn-notifications" title="System Alerts & Notifications" onclick="toggleNotificationsDropdown()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                <span class="bubble-dot" id="notif-badge-dot"></span>
+              </button>
+              <div class="notifications-dropdown-menu" id="notifications-dropdown-menu" style="display:none;"></div>
             </div>
-            <div class="profile-pill-mini">
-              <div class="mini-avatar"></div>
-            </div>
+
+            <!-- Technical Guide Button -->
+            <a href="/guide" target="_blank" class="nav-guide-btn" title="Open Technical Guide & Metric Explanations">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              <span>User Guide</span>
+            </a>
           </div>
         </header>
 
@@ -325,6 +343,10 @@
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/></svg>
                     Log to Session History
                   </button>
+                  <button class="btn-soft" id="btn-save-student" style="display:none; width:100%; margin-top:6px;" onclick="saveActiveStudentUpdates()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/></svg>
+                    Save Changes to Registry
+                  </button>
                 </div>
 
               </div>
@@ -527,14 +549,14 @@
           </div>
         </section>
 
-        <!-- Tab 5: Model Analytics -->
+        <!-- Tab 5: Model Validation & Academic Benchmarks -->
         <section id="tab-analytics" class="tab-panel">
           <div class="panel-hero-header">
             <div>
-              <h2>Model Analytics & Performance Benchmarks</h2>
-              <p>Architecture specifications, validation metrics, and feature importance rankings.</p>
+              <h2>Model Validation & Performance Benchmarks</h2>
+              <p>Academic audit metrics, 5-fold cross-validation results, confusion matrix, and feature importance weights.</p>
             </div>
-            <a href="/guide" target="_blank" class="btn-soft">View Interpretation Guide</a>
+            <a href="/guide" target="_blank" class="btn-soft">View Full Technical Guide</a>
           </div>
 
           <div class="cohort-summary-grid">

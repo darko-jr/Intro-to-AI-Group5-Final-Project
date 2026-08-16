@@ -259,11 +259,67 @@ body {
   margin-bottom: 24px;
 }
 
+.greeting-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.greeting-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .greeting-box h2 {
-  font-size: 21px;
+  font-size: 20px;
   font-weight: 800;
   color: var(--text-dark);
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
+}
+
+.active-student-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #FFFFFF;
+  border: 1px solid var(--purple-brand);
+  color: var(--purple-brand);
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(108, 92, 231, 0.12);
+  transition: var(--transition);
+}
+
+.active-student-pill:hover {
+  background: var(--purple-brand);
+  color: #FFFFFF;
+}
+
+.pill-remove-btn {
+  font-size: 14px;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.portal-status-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-green-text);
+  background: var(--color-green-bg);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  display: inline-block;
+  width: fit-content;
+}
+
+/* Global Search Container & Dropdown */
+.search-container {
+  position: relative;
+  width: 380px;
 }
 
 .search-pill-box {
@@ -273,9 +329,15 @@ body {
   background: var(--bg-card-alt);
   border: 1px solid var(--border-card);
   border-radius: var(--radius-full);
-  padding: 8px 18px;
-  width: 360px;
+  padding: 8px 16px;
   color: var(--text-muted);
+  transition: var(--transition);
+}
+
+.search-pill-box:focus-within {
+  background: #FFFFFF;
+  border-color: var(--purple-brand);
+  box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.12);
 }
 
 .search-pill-box input {
@@ -292,15 +354,110 @@ body {
   color: var(--text-muted);
 }
 
+.search-clear-btn {
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.search-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: 100%;
+  background: #FFFFFF;
+  border-radius: var(--radius-pill);
+  box-shadow: 0 12px 28px rgba(45, 37, 53, 0.14), 0 2px 6px rgba(0, 0, 0, 0.04);
+  border: 1px solid var(--border-card);
+  padding: 8px;
+  z-index: 1000;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.search-category-title {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+  padding: 6px 10px 4px;
+}
+
+.search-dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.search-dropdown-item:hover {
+  background: var(--bg-card-alt);
+}
+
+.search-item-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.search-item-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+}
+
+.search-item-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.search-item-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+.search-item-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.search-student-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+}
+.search-student-badge.High { background: var(--color-red-bg); color: var(--color-red-text); }
+.search-student-badge.Medium { background: var(--color-amber-bg); color: var(--color-amber-text); }
+.search-student-badge.Low { background: var(--color-green-bg); color: var(--color-green-text); }
+
+/* Top Nav Action Toolbar */
 .top-nav-actions {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
+.nav-action-wrapper {
+  position: relative;
+}
+
 .icon-bubble-btn {
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   background: var(--bg-card-alt);
   border: 1px solid var(--border-card);
@@ -315,6 +472,7 @@ body {
 
 .icon-bubble-btn:hover {
   background: #E8E3DC;
+  color: var(--text-dark);
 }
 
 .bubble-dot {
@@ -323,16 +481,98 @@ body {
   border-radius: 50%;
   background: var(--color-red);
   position: absolute;
-  top: 9px;
-  right: 10px;
+  top: 8px;
+  right: 9px;
 }
 
-.profile-pill-mini {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background: var(--text-secondary);
-  cursor: pointer;
+.notifications-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 320px;
+  background: #FFFFFF;
+  border-radius: var(--radius-pill);
+  box-shadow: 0 12px 28px rgba(45, 37, 53, 0.14), 0 2px 6px rgba(0, 0, 0, 0.04);
+  border: 1px solid var(--border-card);
+  padding: 12px;
+  z-index: 1000;
+}
+
+.notif-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-card);
+  margin-bottom: 8px;
+}
+
+.notif-header span {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+.notif-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.notif-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--bg-card-alt);
+  font-size: 11.5px;
+}
+
+.notif-item-title {
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+.notif-item-time {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.nav-guide-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--purple-light);
+  color: var(--purple-brand);
+  border: 1px solid rgba(108, 92, 231, 0.2);
+  padding: 8px 14px;
+  border-radius: var(--radius-full);
+  font-size: 12.5px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: var(--transition);
+}
+
+.nav-guide-btn:hover {
+  background: var(--purple-brand);
+  color: #FFFFFF;
+}
+
+.arch-chip.active {
+  border-color: var(--text-dark);
+  background: #FFFFFF;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.checklist-step.completed {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+.checklist-step.completed .step-box {
+  background: var(--color-green);
+  border-color: var(--color-green);
 }
 
 /* Tab Panels */

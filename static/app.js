@@ -285,54 +285,294 @@ const PERSONAS = {
   high_risk: {
     G1: 6, failures: 2, absences: 18, age: 18,
     health: 2, freetime: 4, Walc: 4, goout: 4,
-    Medu: 1, famrel: 2
+    Medu: 1, famrel: 2, label: 'High Risk Profile'
   },
   borderline: {
     G1: 10, failures: 1, absences: 8, age: 17,
     health: 3, freetime: 3, Walc: 2, goout: 3,
-    Medu: 2, famrel: 3
+    Medu: 2, famrel: 3, label: 'Moderate Risk Profile'
   },
   thriving: {
     G1: 16, failures: 0, absences: 1, age: 16,
     health: 5, freetime: 2, Walc: 1, goout: 2,
-    Medu: 4, famrel: 5
+    Medu: 4, famrel: 5, label: 'Low Risk Profile'
   },
   social_drift: {
     G1: 11, failures: 0, absences: 14, age: 17,
     health: 4, freetime: 5, Walc: 4, goout: 5,
-    Medu: 3, famrel: 4
+    Medu: 3, famrel: 4, label: 'Attendance Slippage'
   }
 };
-
-let currentPersonaIdx = 0;
-const personaKeys = ['high_risk', 'borderline', 'thriving', 'social_drift'];
-
-function cyclePersona() {
-  currentPersonaIdx = (currentPersonaIdx + 1) % personaKeys.length;
-  loadPersona(personaKeys[currentPersonaIdx]);
-}
 
 function loadPersona(key) {
   const profile = PERSONAS[key];
   if (!profile) return;
 
+  // Highlight active chip
+  document.querySelectorAll('.arch-chip').forEach(c => c.classList.remove('active'));
+  const chipBtn = document.querySelector(`.arch-chip[onclick*="${key}"]`);
+  if (chipBtn) chipBtn.classList.add('active');
+
   Object.entries(profile).forEach(([feat, val]) => {
+    if (feat === 'label') return;
     const inputEl = document.getElementById(`inp-${feat}`);
     if (inputEl) {
       inputEl.value = val;
       updateInput(feat, val);
     }
   });
+
+  // If search open, close it
+  clearGlobalSearch();
 }
 
-function handleQuickSearch(query) {
-  if (!query) return;
-  const q = query.toLowerCase();
-  if (q.includes('high') || q.includes('fail') || q.includes('danger')) loadPersona('high_risk');
-  else if (q.includes('border') || q.includes('med') || q.includes('pass')) loadPersona('borderline');
-  else if (q.includes('thrive') || q.includes('good') || q.includes('low') || q.includes('top')) loadPersona('thriving');
-  else if (q.includes('absent') || q.includes('drift') || q.includes('social')) loadPersona('social_drift');
+async function handleGlobalSearch(query) {
+  const dropdown = document.getElementById('search-dropdown-menu');
+  const clearBtn = document.getElementById('search-clear-btn');
+  if (!dropdown) return;
+
+  const q = (query || '').toLowerCase().trim();
+  if (clearBtn) clearBtn.style.display = q ? 'block' : 'none';
+
+  dropdown.style.display = 'block';
+
+  let html = '';
+
+  // 1. Fetch Matching Students from Database API
+  try {
+    const res = await fetch(`/api/students?q=${encodeURIComponent(q)}&limit=6`);
+    if (res.ok) {
+      const data = await res.json();
+      const students = data.students || [];
+      
+      if (students.length > 0) {
+        html += '<div class="search-category-title">Student Database Profiles</div>';
+        students.forEach(s => {
+          html += `
+            <div class="search-dropdown-item" onclick="loadStudentProfile('${s.id}')">
+              <div class="search-item-left">
+                <div class="search-item-icon" style="background:var(--bg-card-alt); font-weight:bold; font-size:10px;">${s.id.split('-')[1]}</div>
+                <div class="search-item-info">
+                  <span class="search-item-name">${s.name} <span style="font-size:11px; font-weight:normal; color:var(--text-muted);">(${s.id})</span></span>
+                  <span class="search-item-desc">G1: ${s.G1}/20 | Absences: ${s.absences}d | Failures: ${s.failures}</span>
+                </div>
+              </div>
+              <span class="search-student-badge ${s.predicted_class}">${s.predicted_class} Risk</span>
+            </div>
+          `;
+        });
+      }
+    }
+  } catch (err) {
+    console.error('Error fetching students:', err);
+  }
+
+  // 2. Personas
+  const personas = [
+    { key: 'high_risk', name: 'High Risk Preset', desc: 'G1: 6, Failures: 2, Absences: 18' },
+    { key: 'borderline', name: 'Moderate Risk Preset', desc: 'G1: 10, Failures: 1, Absences: 8' },
+    { key: 'thriving', name: 'Low Risk Preset', desc: 'G1: 16, Failures: 0, Absences: 1' },
+    { key: 'social_drift', name: 'Attendance Slippage Preset', desc: 'G1: 11, Failures: 0, Absences: 14' }
+  ];
+
+  const filteredPersonas = personas.filter(p => !q || p.name.toLowerCase().includes(q) || p.desc.toLowerCase().includes(q));
+  if (filteredPersonas.length > 0) {
+    html += '<div class="search-category-title">Preset Personas</div>';
+    filteredPersonas.forEach(p => {
+      html += `
+        <div class="search-dropdown-item" onclick="loadPersona('${p.key}'); switchToTab('dashboard');">
+          <div class="search-item-left">
+            <div class="search-item-icon" style="background:var(--bg-card-alt);">&#9679;</div>
+            <div class="search-item-info">
+              <span class="search-item-name">${p.name}</span>
+              <span class="search-item-desc">${p.desc}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+  }
+
+  // 3. Navigation Shortcuts
+  const navTabs = [
+    { tab: 'dashboard', name: 'Dashboard & Risk Gauges', desc: 'Live student risk evaluation and feature sliders' },
+    { tab: 'recommendations', name: 'Intervention Plan', desc: '4-Pillar prescriptive action plan and checklist' },
+    { tab: 'whatif', name: 'What-If Scenario Simulator', desc: 'Model trajectory reduction from student improvements' },
+    { tab: 'cohort', name: 'Cohort Batch Triage', desc: 'Upload CSV dataset and triage entire cohort' },
+    { tab: 'analytics', name: 'Model Validation', desc: 'Accuracy metrics, confusion matrix, and feature weights' },
+    { tab: 'history', name: 'Session History Log', desc: 'View and export logged student assessments' }
+  ];
+
+  const filteredTabs = navTabs.filter(t => !q || t.name.toLowerCase().includes(q) || t.desc.toLowerCase().includes(q));
+  if (filteredTabs.length > 0) {
+    html += '<div class="search-category-title">Navigation Shortcuts</div>';
+    filteredTabs.forEach(t => {
+      html += `
+        <div class="search-dropdown-item" onclick="switchToTab('${t.tab}'); clearGlobalSearch();">
+          <div class="search-item-left">
+            <div class="search-item-icon" style="background:var(--purple-light); color:var(--purple-brand);">&#8680;</div>
+            <div class="search-item-info">
+              <span class="search-item-name">${t.name}</span>
+              <span class="search-item-desc">${t.desc}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+  }
+
+  if (!html) {
+    html = '<div style="padding:12px; font-size:12px; color:var(--text-muted); text-align:center;">No matching students or tabs found.</div>';
+  }
+
+  dropdown.innerHTML = html;
 }
+
+async function loadStudentProfile(studentId) {
+  try {
+    const res = await fetch(`/api/students/${studentId}`);
+    if (!res.ok) throw new Error('Student not found');
+    const data = await res.json();
+
+    state.activeStudent = data;
+
+    // Load inputs
+    Object.entries(data.inputs).forEach(([feat, val]) => {
+      const inputEl = document.getElementById(`inp-${feat}`);
+      if (inputEl) {
+        inputEl.value = val;
+        updateInput(feat, val);
+      }
+    });
+
+    // Update active student pill
+    const pill = document.getElementById('active-student-pill');
+    const pillText = document.getElementById('active-student-text');
+    const saveBtn = document.getElementById('btn-save-student');
+
+    if (pill && pillText) {
+      pillText.textContent = `Active: ${data.id} · ${data.name}`;
+      pill.style.display = 'flex';
+    }
+    if (saveBtn) saveBtn.style.display = 'block';
+
+    // Clear preset chips active state
+    document.querySelectorAll('.arch-chip').forEach(c => c.classList.remove('active'));
+
+    clearGlobalSearch();
+    switchToTab('dashboard');
+  } catch (err) {
+    console.error('Error loading student profile:', err);
+  }
+}
+
+function clearActiveStudent() {
+  state.activeStudent = null;
+  const pill = document.getElementById('active-student-pill');
+  const saveBtn = document.getElementById('btn-save-student');
+  if (pill) pill.style.display = 'none';
+  if (saveBtn) saveBtn.style.display = 'none';
+}
+
+async function saveActiveStudentUpdates() {
+  if (!state.activeStudent) return;
+  const studentId = state.activeStudent.id;
+  const btn = document.getElementById('btn-save-student');
+
+  try {
+    const res = await fetch(`/api/students/${studentId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(state.currentInputs)
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      state.activeStudent = data.student;
+
+      if (btn) {
+        const orig = btn.innerHTML;
+        btn.innerHTML = 'Saved to Registry!';
+        btn.style.background = '#27AE60';
+        btn.style.color = '#FFFFFF';
+        setTimeout(() => {
+          btn.innerHTML = orig;
+          btn.style.background = '';
+          btn.style.color = '';
+        }, 1200);
+      }
+    }
+  } catch (err) {
+    console.error('Error saving student updates:', err);
+  }
+}
+
+function clearGlobalSearch() {
+  const input = document.getElementById('global-search');
+  const dropdown = document.getElementById('search-dropdown-menu');
+  const clearBtn = document.getElementById('search-clear-btn');
+  if (input) input.value = '';
+  if (dropdown) dropdown.style.display = 'none';
+  if (clearBtn) clearBtn.style.display = 'none';
+}
+
+function toggleNotificationsDropdown() {
+  const dropdown = document.getElementById('notifications-dropdown-menu');
+  if (!dropdown) return;
+
+  if (dropdown.style.display === 'block') {
+    dropdown.style.display = 'none';
+    return;
+  }
+
+  // Render notifications
+  const pred = state.lastPrediction;
+  const currentRisk = pred ? pred.predicted_class : 'Medium';
+  const conf = pred ? pred.confidence : 80;
+  const historyLen = state.history.length;
+
+  dropdown.innerHTML = `
+    <div class="notif-header">
+      <span>System Alerts & Notifications</span>
+      <span style="font-size:10.5px; color:var(--text-muted);">Active Session</span>
+    </div>
+    <div class="notif-list">
+      <div class="notif-item">
+        <span class="notif-item-title">Current Profile: ${currentRisk} Risk</span>
+        <span style="color:var(--text-secondary);">Model is predicting with ${conf}% certainty.</span>
+        <span class="notif-item-time">Just now</span>
+      </div>
+      <div class="notif-item">
+        <span class="notif-item-title">Model Status: Sprint 2 Tuned</span>
+        <span style="color:var(--text-secondary);">Random Forest running with 80.6% test accuracy and 0.0% critical false negatives.</span>
+        <span class="notif-item-time">Active</span>
+      </div>
+      <div class="notif-item">
+        <span class="notif-item-title">Session Audit Log</span>
+        <span style="color:var(--text-secondary);">${historyLen} student assessment${historyLen === 1 ? '' : 's'} recorded.</span>
+        <span class="notif-item-time">${historyLen > 0 ? 'Logged' : 'No records yet'}</span>
+      </div>
+    </div>
+  `;
+
+  dropdown.style.display = 'block';
+}
+
+// Close dropdowns on outside click
+document.addEventListener('click', (e) => {
+  const searchContainer = document.querySelector('.search-container');
+  const notifWrapper = document.querySelector('.nav-action-wrapper');
+  
+  if (searchContainer && !searchContainer.contains(e.target)) {
+    const dropdown = document.getElementById('search-dropdown-menu');
+    if (dropdown) dropdown.style.display = 'none';
+  }
+
+  if (notifWrapper && !notifWrapper.contains(e.target)) {
+    const notifDropdown = document.getElementById('notifications-dropdown-menu');
+    if (notifDropdown) notifDropdown.style.display = 'none';
+  }
+});
 
 function resetForm() {
   loadPersona('borderline');
