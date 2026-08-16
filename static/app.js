@@ -1,8 +1,3 @@
-/**
- * Smartech Student Risk Early-Warning Dashboard — Client Logic
- */
-
-// Global State
 const state = {
   currentInputs: {
     G1: 11,
@@ -24,7 +19,6 @@ const state = {
   debounceTimer: null
 };
 
-// Feature Metadata for labels
 const METADATA = {
   G1: { label: 'First Period Grade (G1)', suffix: ' / 20' },
   failures: { label: 'Past Failures', suffix: '' },
@@ -40,19 +34,15 @@ const METADATA = {
 
 const MEDU_NAMES = ['None (0)', 'Primary (1)', 'Middle (2)', 'Secondary (3)', 'Higher Ed (4)'];
 
-// Initialize on DOM Ready
 document.addEventListener('DOMContentLoaded', () => {
   setupSidebarNavigation();
   setupDropzone();
   updateHistoryCount();
   renderHistoryTable();
-  runPrediction(); // Initial prediction
+  runPrediction();
   loadFeatureImportance();
 });
 
-/* ==========================================================================
-   Sidebar Navigation
-   ========================================================================== */
 function setupSidebarNavigation() {
   document.querySelectorAll('.nav-item').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -77,14 +67,10 @@ function switchToTab(tabName) {
   }
 }
 
-/* ==========================================================================
-   Single Student Prediction
-   ========================================================================== */
 function updateInput(feature, value) {
   const numVal = parseFloat(value);
   state.currentInputs[feature] = numVal;
   
-  // Update value pill display
   const disp = document.getElementById(`val-${feature}`);
   if (disp) {
     if (feature === 'Medu') {
@@ -94,11 +80,10 @@ function updateInput(feature, value) {
     }
   }
 
-  // Debounced real-time prediction
   clearTimeout(state.debounceTimer);
   state.debounceTimer = setTimeout(() => {
     runPrediction();
-  }, 100);
+  }, 180);
 }
 
 async function runPrediction() {
@@ -109,97 +94,89 @@ async function runPrediction() {
       body: JSON.stringify(state.currentInputs)
     });
     
-    if (!res.ok) throw new Error('Prediction API error');
+    if (!res.ok) throw new Error('Prediction API failed');
     const data = await res.json();
     state.lastPrediction = data;
-    renderPredictionResult(data);
+    renderPredictionResults(data);
   } catch (err) {
-    console.error('Prediction request failed:', err);
+    console.error('Error running prediction:', err);
   }
 }
 
-function renderPredictionResult(data) {
-  const { predicted_class, confidence, risk_score, probabilities, contributions, recommendations } = data;
-  const circumference = 301.6; // 2 * PI * 48
+function renderPredictionResults(data) {
+  const { predicted_class, confidence, risk_score, probabilities, contributions, recommendations, raw_inputs } = data;
 
-  // 1. Right Rail Metric Rings
-  // Ring 1: Academic Risk Score
-  const ringRisk = document.getElementById('ring-risk');
-  const railRiskPct = document.getElementById('rail-risk-pct');
-  const railRiskBadge = document.getElementById('rail-risk-badge');
-  
-  if (ringRisk && railRiskPct) {
-    railRiskPct.textContent = `${Math.round(risk_score)}%`;
-    const offsetRisk = circumference - (circumference * (risk_score / 100));
-    ringRisk.style.strokeDashoffset = offsetRisk;
+  const riskBadge = document.getElementById('rail-risk-badge');
+  const riskPct = document.getElementById('rail-risk-pct');
+  const riskRing = document.getElementById('ring-risk');
+
+  if (riskBadge && riskPct && riskRing) {
+    riskBadge.textContent = `${predicted_class} Risk`;
+    riskBadge.className = `rail-risk-badge ${predicted_class}`;
+    riskPct.textContent = `${Math.round(risk_score)}%`;
+
+    const circumference = 301.6;
+    const offset = circumference - (risk_score / 100) * circumference;
+    riskRing.style.strokeDashoffset = offset;
 
     if (predicted_class === 'High') {
-      ringRisk.style.stroke = '#FF7675';
-      railRiskBadge.textContent = 'High Academic Risk';
-      railRiskBadge.style.background = 'rgba(224, 86, 86, 0.4)';
+      riskRing.style.stroke = '#EF4444';
     } else if (predicted_class === 'Medium') {
-      ringRisk.style.stroke = '#FDCB6E';
-      railRiskBadge.textContent = 'Medium Risk (Borderline)';
-      railRiskBadge.style.background = 'rgba(230, 138, 0, 0.4)';
+      riskRing.style.stroke = '#F59E0B';
     } else {
-      ringRisk.style.stroke = '#55E6C1';
-      railRiskBadge.textContent = 'Low Academic Risk';
-      railRiskBadge.style.background = 'rgba(39, 174, 96, 0.4)';
+      riskRing.style.stroke = '#10B981';
     }
   }
 
-  // Ring 2: Model Confidence
-  const ringConf = document.getElementById('ring-conf');
-  const railConfPct = document.getElementById('rail-conf-pct');
-  if (ringConf && railConfPct) {
-    railConfPct.textContent = `${Math.round(confidence)}%`;
-    const offsetConf = circumference - (circumference * (confidence / 100));
-    ringConf.style.strokeDashoffset = offsetConf;
+  const confPct = document.getElementById('rail-conf-pct');
+  const confRing = document.getElementById('ring-conf');
+  if (confPct && confRing) {
+    confPct.textContent = `${Math.round(confidence)}%`;
+    const circumference = 301.6;
+    const offset = circumference - (confidence / 100) * circumference;
+    confRing.style.strokeDashoffset = offset;
   }
 
-  // Ring 3: G1 Score Band
-  const ringG1 = document.getElementById('ring-g1');
-  const railG1Val = document.getElementById('rail-g1-val');
-  const railG1Status = document.getElementById('rail-g1-status');
-  const g1Val = state.currentInputs.G1;
-  if (ringG1 && railG1Val) {
-    railG1Val.textContent = `${Math.round(g1Val)}/20`;
-    const g1Pct = (g1Val / 20) * 100;
-    const offsetG1 = circumference - (circumference * (g1Pct / 100));
-    ringG1.style.strokeDashoffset = offsetG1;
+  const g1Val = document.getElementById('rail-g1-val');
+  const g1Status = document.getElementById('rail-g1-status');
+  const g1Ring = document.getElementById('ring-g1');
+  if (g1Val && g1Status && g1Ring) {
+    const g1Score = raw_inputs.G1;
+    g1Val.textContent = `${Math.round(g1Score)}/20`;
     
-    if (g1Val <= 9) {
-      railG1Status.textContent = `Critical (≤9) · ${Math.round(g1Pct)}%`;
-      ringG1.style.stroke = '#FF7675';
-    } else if (g1Val <= 14) {
-      railG1Status.textContent = `Passing · ${Math.round(g1Pct)}%`;
-      ringG1.style.stroke = '#FDCB6E';
+    const pct = Math.round((g1Score / 20) * 100);
+    if (g1Score <= 9) {
+      g1Status.textContent = `At Risk (${pct}%)`;
+      g1Status.style.color = '#EF4444';
+      g1Ring.style.stroke = '#EF4444';
+    } else if (g1Score <= 13) {
+      g1Status.textContent = `Passing (${pct}%)`;
+      g1Status.style.color = '#F59E0B';
+      g1Ring.style.stroke = '#F59E0B';
     } else {
-      railG1Status.textContent = `Honor Grade · ${Math.round(g1Pct)}%`;
-      ringG1.style.stroke = '#55E6C1';
+      g1Status.textContent = `Strong (${pct}%)`;
+      g1Status.style.color = '#10B981';
+      g1Ring.style.stroke = '#10B981';
     }
+    
+    const circumference = 301.6;
+    const offset = circumference - (g1Score / 20) * circumference;
+    g1Ring.style.strokeDashoffset = offset;
   }
 
-  // 2. Sidebar Badge & Recommendation Count
-  const recBadge = document.getElementById('recs-count-badge');
-  if (recBadge) {
-    recBadge.textContent = recommendations ? recommendations.length : 0;
-  }
-
-  // 3. Dashboard Quick Recommendations Preview
   const dashRecsWrap = document.getElementById('dashboard-recs-preview');
   if (dashRecsWrap) {
     dashRecsWrap.innerHTML = '';
     if (!recommendations || recommendations.length === 0) {
-      dashRecsWrap.innerHTML = '<div class="rec-preview-item"><span class="rec-preview-title">Student is on track. Continue standard monitoring.</span></div>';
+      dashRecsWrap.innerHTML = '<p class="empty-state">No immediate intervention required. Student performance is stable.</p>';
     } else {
-      recommendations.slice(0, 3).forEach(r => {
+      recommendations.slice(0, 2).forEach(r => {
         const item = document.createElement('div');
         item.className = 'rec-preview-item';
         item.innerHTML = `
           <div class="rec-preview-meta">
             <span class="rec-preview-title">${r.action}</span>
-            <span class="rec-preview-sub">${r.category} • ${r.timeline || 'Immediate'}</span>
+            <span class="rec-preview-sub">${r.category} | ${r.timeline || 'Immediate'}</span>
           </div>
           <span class="rec-badge-pill ${r.urgency}">${r.urgency}</span>
         `;
@@ -208,17 +185,16 @@ function renderPredictionResult(data) {
     }
   }
 
-  // 4. Dedicated Recommendations Tab Full Plan
   const fullRecsWrap = document.getElementById('full-recommendations-container');
   const heroRecLabel = document.getElementById('rec-hero-risk-label');
   if (heroRecLabel) {
-    heroRecLabel.textContent = `${predicted_class} Academic Risk (${confidence}% Conf)`;
+    heroRecLabel.textContent = `${predicted_class} Academic Risk (${confidence}% Certainty)`;
   }
 
   if (fullRecsWrap) {
     fullRecsWrap.innerHTML = '';
     if (!recommendations || recommendations.length === 0) {
-      fullRecsWrap.innerHTML = '<div class="soft-card"><p>No active intervention required. Student profile is in the Low-Risk band.</p></div>';
+      fullRecsWrap.innerHTML = '<div class="soft-card"><p>No active intervention required. Student profile is in the Low-Risk category.</p></div>';
     } else {
       recommendations.forEach((r, idx) => {
         const card = document.createElement('div');
@@ -230,7 +206,7 @@ function renderPredictionResult(data) {
             <ul class="plan-steps-checklist">
               ${r.steps.map((s, sIdx) => `
                 <li class="checklist-step" onclick="toggleStepCheckbox(this)">
-                  <span class="step-box" id="step-box-${idx}-${sIdx}">✓</span>
+                  <span class="step-box" id="step-box-${idx}-${sIdx}"></span>
                   <span>${s}</span>
                 </li>
               `).join('')}
@@ -243,7 +219,7 @@ function renderPredictionResult(data) {
             <span class="plan-pillar-tag">${r.category}</span>
             <div class="plan-badges-wrap">
               <span class="rec-badge-pill ${r.urgency}">${r.urgency} Priority</span>
-              ${r.timeline ? `<span class="plan-timeline">⏱ ${r.timeline}</span>` : ''}
+              ${r.timeline ? `<span class="plan-timeline">${r.timeline}</span>` : ''}
             </div>
           </div>
           <div class="plan-title-main">${r.action}</div>
@@ -255,7 +231,6 @@ function renderPredictionResult(data) {
     }
   }
 
-  // 5. Dashboard XAI Factors
   const driversWrap = document.getElementById('dash-risk-drivers');
   const protWrap = document.getElementById('dash-protective-factors');
 
@@ -263,134 +238,128 @@ function renderPredictionResult(data) {
     driversWrap.innerHTML = '';
     protWrap.innerHTML = '';
 
-    if (contributions.risk_drivers.length === 0) {
-      driversWrap.innerHTML = '<div class="factor-bubble driver"><span class="factor-name">No severe risk flags</span></div>';
+    const drivers = contributions.risk_drivers || [];
+    const protective = contributions.protective_factors || [];
+
+    if (drivers.length === 0) {
+      driversWrap.innerHTML = '<span class="factor-none">No acute risk factors detected</span>';
     } else {
-      contributions.risk_drivers.forEach(d => {
-        const item = document.createElement('div');
-        item.className = 'factor-bubble driver';
-        item.innerHTML = `
-          <span class="factor-name">${d.description}</span>
-          <span class="factor-impact">+${d.weight} impact</span>
+      drivers.forEach(d => {
+        const pill = document.createElement('div');
+        pill.className = 'factor-pill red';
+        pill.innerHTML = `
+          <span class="factor-name">${d.name}</span>
+          <span class="factor-desc">${d.description}</span>
+          <span class="factor-weight">+${d.weight}%</span>
         `;
-        driversWrap.appendChild(item);
+        driversWrap.appendChild(pill);
       });
     }
 
-    if (contributions.protective_factors.length === 0) {
-      protWrap.innerHTML = '<div class="factor-bubble protective"><span class="factor-name">No strong protective factors</span></div>';
+    if (protective.length === 0) {
+      protWrap.innerHTML = '<span class="factor-none">No significant protective buffers</span>';
     } else {
-      contributions.protective_factors.forEach(p => {
-        const item = document.createElement('div');
-        item.className = 'factor-bubble protective';
-        item.innerHTML = `
-          <span class="factor-name">${p.description}</span>
-          <span class="factor-impact">-${p.weight} protective</span>
+      protective.forEach(p => {
+        const pill = document.createElement('div');
+        pill.className = 'factor-pill green';
+        pill.innerHTML = `
+          <span class="factor-name">${p.name}</span>
+          <span class="factor-desc">${p.description}</span>
+          <span class="factor-weight">-${p.weight}%</span>
         `;
-        protWrap.appendChild(item);
+        protWrap.appendChild(pill);
       });
     }
   }
 }
 
 function toggleStepCheckbox(el) {
+  el.classList.toggle('completed');
   const box = el.querySelector('.step-box');
   if (box) {
-    box.classList.toggle('checked');
+    box.textContent = el.classList.contains('completed') ? 'Done' : '';
   }
 }
 
-/* ==========================================================================
-   Persona Presets
-   ========================================================================== */
 const PERSONAS = {
   high_risk: {
-    G1: 6, failures: 2, absences: 18, age: 18, health: 2,
-    freetime: 4, Walc: 4, goout: 4, Medu: 1, famrel: 2
+    G1: 6, failures: 2, absences: 18, age: 18,
+    health: 2, freetime: 4, Walc: 4, goout: 4,
+    Medu: 1, famrel: 2
   },
   borderline: {
-    G1: 10, failures: 1, absences: 8, age: 17, health: 3,
-    freetime: 3, Walc: 2, goout: 3, Medu: 2, famrel: 3
+    G1: 10, failures: 1, absences: 8, age: 17,
+    health: 3, freetime: 3, Walc: 2, goout: 3,
+    Medu: 2, famrel: 3
   },
   thriving: {
-    G1: 16, failures: 0, absences: 1, age: 16, health: 5,
-    freetime: 2, Walc: 1, goout: 2, Medu: 4, famrel: 5
+    G1: 16, failures: 0, absences: 1, age: 16,
+    health: 5, freetime: 2, Walc: 1, goout: 2,
+    Medu: 4, famrel: 5
   },
   social_drift: {
-    G1: 11, failures: 0, absences: 14, age: 17, health: 4,
-    freetime: 5, Walc: 4, goout: 5, Medu: 3, famrel: 4
+    G1: 11, failures: 0, absences: 14, age: 17,
+    health: 4, freetime: 5, Walc: 4, goout: 5,
+    Medu: 3, famrel: 4
   }
 };
 
-let personaIndex = 0;
+let currentPersonaIdx = 0;
 const personaKeys = ['high_risk', 'borderline', 'thriving', 'social_drift'];
 
 function cyclePersona() {
-  personaIndex = (personaIndex + 1) % personaKeys.length;
-  loadPersona(personaKeys[personaIndex]);
-}
-
-function handleQuickSearch(query) {
-  const q = query.toLowerCase().trim();
-  if (q.includes('high') || q.includes('fail') || q.includes('risk')) {
-    loadPersona('high_risk');
-  } else if (q.includes('border') || q.includes('med')) {
-    loadPersona('borderline');
-  } else if (q.includes('thriv') || q.includes('good') || q.includes('low')) {
-    loadPersona('thriving');
-  } else if (q.includes('drift') || q.includes('social')) {
-    loadPersona('social_drift');
-  }
+  currentPersonaIdx = (currentPersonaIdx + 1) % personaKeys.length;
+  loadPersona(personaKeys[currentPersonaIdx]);
 }
 
 function loadPersona(key) {
-  const vals = PERSONAS[key];
-  if (!vals) return;
-  
-  for (const [feat, val] of Object.entries(vals)) {
-    const input = document.getElementById(`inp-${feat}`);
-    if (input) {
-      input.value = val;
+  const profile = PERSONAS[key];
+  if (!profile) return;
+
+  Object.entries(profile).forEach(([feat, val]) => {
+    const inputEl = document.getElementById(`inp-${feat}`);
+    if (inputEl) {
+      inputEl.value = val;
       updateInput(feat, val);
     }
-  }
+  });
+}
+
+function handleQuickSearch(query) {
+  if (!query) return;
+  const q = query.toLowerCase();
+  if (q.includes('high') || q.includes('fail') || q.includes('danger')) loadPersona('high_risk');
+  else if (q.includes('border') || q.includes('med') || q.includes('pass')) loadPersona('borderline');
+  else if (q.includes('thrive') || q.includes('good') || q.includes('low') || q.includes('top')) loadPersona('thriving');
+  else if (q.includes('absent') || q.includes('drift') || q.includes('social')) loadPersona('social_drift');
 }
 
 function resetForm() {
-  const defaults = {
-    G1: 11, failures: 0, absences: 4, age: 17, health: 4,
-    freetime: 3, Walc: 1, goout: 3, Medu: 2, famrel: 4
-  };
-  for (const [feat, val] of Object.entries(defaults)) {
-    const input = document.getElementById(`inp-${feat}`);
-    if (input) {
-      input.value = val;
-      updateInput(feat, val);
-    }
-  }
+  loadPersona('borderline');
 }
 
-/* ==========================================================================
-   What-If Simulator (Tab 3)
-   ========================================================================== */
 function syncWhatIfWithBaseline() {
   state.whatIfBaseline = { ...state.currentInputs };
-  
-  document.getElementById('wi-base-tag').textContent = `${state.lastPrediction?.predicted_class || 'Assessing'} Risk`;
-  document.getElementById('wi-base-score').textContent = state.lastPrediction?.risk_score || '0';
+  const baseScore = state.lastPrediction ? state.lastPrediction.risk_score : 50;
+  const baseRisk = state.lastPrediction ? state.lastPrediction.predicted_class : 'Medium';
+
+  const baseTag = document.getElementById('wi-base-tag');
+  baseTag.textContent = `${baseRisk} Risk`;
+  baseTag.className = `status-pill ${baseRisk === 'High' ? 'red' : (baseRisk === 'Low' ? 'green' : '')}`;
+
+  document.getElementById('wi-base-score').textContent = baseScore.toFixed(1);
 
   const summaryWrap = document.getElementById('wi-base-summary');
   summaryWrap.innerHTML = `
-    <div class="wi-detail-row"><span>First Period Grade (G1):</span><strong>${state.whatIfBaseline.G1}/20</strong></div>
-    <div class="wi-detail-row"><span>Past Course Failures:</span><strong>${state.whatIfBaseline.failures}</strong></div>
+    <div class="wi-detail-row"><span>G1 Score:</span><strong>${state.whatIfBaseline.G1}/20</strong></div>
     <div class="wi-detail-row"><span>Term Absences:</span><strong>${state.whatIfBaseline.absences} days</strong></div>
+    <div class="wi-detail-row"><span>Past Failures:</span><strong>${state.whatIfBaseline.failures}</strong></div>
     <div class="wi-detail-row"><span>Weekend Alcohol:</span><strong>${state.whatIfBaseline.Walc}/5</strong></div>
     <div class="wi-detail-row"><span>Going Out:</span><strong>${state.whatIfBaseline.goout}/5</strong></div>
   `;
 
-  // Target simulation defaults
   const targetG1 = Math.min(20, state.whatIfBaseline.G1 + 3);
-  const targetAbs = Math.max(0, Math.floor(state.whatIfBaseline.absences * 0.3));
+  const targetAbs = Math.max(0, Math.round(state.whatIfBaseline.absences * 0.4));
   const targetWalc = Math.max(1, state.whatIfBaseline.Walc - 1);
   const targetGoout = Math.max(1, state.whatIfBaseline.goout - 1);
 
@@ -453,7 +422,7 @@ function renderWhatIfOutcome(data) {
   modTag.textContent = `${modified.predicted_class} Risk`;
   modTag.className = `status-pill ${modified.predicted_class === 'Low' ? 'green' : ''}`;
 
-  document.getElementById('wi-shift-badge').textContent = deltas.category_shift;
+  document.getElementById('wi-shift-badge').textContent = `${baseline.predicted_class} Risk to ${modified.predicted_class} Risk`;
 
   const scoreDiffEl = document.getElementById('wi-risk-delta');
   scoreDiffEl.textContent = `${deltas.risk_score_diff > 0 ? '+' : ''}${deltas.risk_score_diff}`;
@@ -466,7 +435,7 @@ function renderWhatIfOutcome(data) {
   const adviceBox = document.getElementById('wi-outcome-advice');
   if (deltas.improved) {
     adviceBox.innerHTML = `
-      <p><strong>Advisor Takeaway:</strong> Under these simulated interventions, the student's risk profile drops by 
+      <p><strong>Advisor Summary:</strong> Under these simulated interventions, the student's risk profile drops by 
       <strong>${Math.abs(deltas.risk_score_diff)} points</strong>, reducing the probability of course failure from 
       <strong>${baseline.probabilities.High}%</strong> down to <strong>${modified.probabilities.High}%</strong>.</p>
     `;
@@ -475,7 +444,7 @@ function renderWhatIfOutcome(data) {
     adviceBox.style.color = '#0E6251';
   } else {
     adviceBox.innerHTML = `
-      <p><strong>Advisor Takeaway:</strong> The proposed parameter changes elevate academic risk. Target attendance retention and study support.</p>
+      <p><strong>Advisor Summary:</strong> The proposed parameter changes elevate academic risk. Prioritize attendance retention and academic tutoring.</p>
     `;
     adviceBox.style.background = '#FEE8E8';
     adviceBox.style.borderColor = '#FCA5A5';
@@ -483,9 +452,6 @@ function renderWhatIfOutcome(data) {
   }
 }
 
-/* ==========================================================================
-   Cohort Triage & Batch Upload (Tab 4)
-   ========================================================================== */
 function setupDropzone() {
   const dropZone = document.getElementById('drop-zone');
   if (!dropZone) return;
@@ -625,9 +591,6 @@ function exportBatchCSV() {
   document.body.removeChild(link);
 }
 
-/* ==========================================================================
-   Model Analytics Feature Importance (Tab 5)
-   ========================================================================== */
 function loadFeatureImportance() {
   const wrap = document.getElementById('feature-importance-bars');
   if (!wrap) return;
@@ -663,9 +626,6 @@ function loadFeatureImportance() {
   });
 }
 
-/* ==========================================================================
-   Session History (Tab 6)
-   ========================================================================== */
 function logToHistory() {
   if (!state.lastPrediction) return;
 
@@ -694,10 +654,9 @@ function logToHistory() {
   updateHistoryCount();
   renderHistoryTable();
 
-  // Button feedback
   const btn = event.currentTarget;
   const orig = btn.innerHTML;
-  btn.innerHTML = '✓ Profile Logged';
+  btn.innerHTML = 'Profile Logged';
   btn.style.background = '#27AE60';
   setTimeout(() => {
     btn.innerHTML = orig;

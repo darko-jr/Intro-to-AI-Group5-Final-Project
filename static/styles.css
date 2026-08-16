@@ -1,8 +1,3 @@
-/* ==========================================================================
-   Smartech UI Design System — Inspired by Reference Mockup
-   Soft Neutral Palette, Curved Sidebar Tabs, 3 Metric Rings, 24px Radii
-   ========================================================================== */
-
 :root {
   /* Canvas & Shell Backgrounds */
   --bg-outer: #DFD9D2;
@@ -75,9 +70,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* ==========================================================================
-   Outer Canvas & Shell
-   ========================================================================== */
+/*Outer Canvas & Shell*/
 .app-canvas {
   width: 100%;
   max-width: 1360px;
@@ -101,9 +94,7 @@ body {
   }
 }
 
-/* ==========================================================================
-   Sidebar Navigation (Matches Reference)
-   ========================================================================== */
+/*Sidebar Navigation (Matches Reference)*/
 .sidebar {
   background: var(--bg-sidebar);
   padding: 32px 16px 24px 24px;
@@ -251,9 +242,7 @@ body {
   background: rgba(255, 255, 255, 0.5);
 }
 
-/* ==========================================================================
-   Main Content Area
-   ========================================================================== */
+/*Main Content Area*/
 .main-body {
   padding: 28px 32px;
   overflow-y: auto;
@@ -362,9 +351,7 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* ==========================================================================
-   Archetype Quick Chips
-   ========================================================================== */
+/*Archetype Quick Chips*/
 .archetype-bar {
   display: flex;
   align-items: center;
@@ -417,9 +404,7 @@ body {
 .chip-dot.green { background: var(--color-green); }
 .chip-dot.blue { background: var(--color-blue); }
 
-/* ==========================================================================
-   Dashboard Main 2-Column Grid (Left Content + Right Metrics Rail)
-   ========================================================================== */
+/*Dashboard Main 2-Column Grid (Left Content + Right Metrics Rail)*/
 .dashboard-grid-layout {
   display: grid;
   grid-template-columns: 1fr 280px;
@@ -552,9 +537,7 @@ body {
   font-weight: 500;
 }
 
-/* ==========================================================================
-   Right Metrics Rail (Matches Reference Image)
-   ========================================================================== */
+/* Right Metrics Rail (Matches Reference Image)*/
 .metrics-rail {
   display: flex;
   flex-direction: column;
@@ -695,9 +678,9 @@ body {
   background: #44374F;
 }
 
-/* ==========================================================================
+/*
    Quick Recommendations Preview Card (Dashboard)
-   ========================================================================== */
+*/
 .recommendations-preview-card {
   border-left: 4px solid var(--text-secondary);
 }
@@ -746,9 +729,7 @@ body {
 .rec-badge-pill.Moderate { background: var(--color-amber-bg); color: var(--color-amber-text); }
 .rec-badge-pill.Maintenance, .rec-badge-pill.Low { background: var(--color-green-bg); color: var(--color-green-text); }
 
-/* ==========================================================================
-   XAI Factor Pills
-   ========================================================================== */
+/*XAI Factor Pills*/
 .xai-pills-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -792,9 +773,7 @@ body {
 .factor-name { font-weight: 600; color: var(--text-dark); }
 .factor-impact { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); }
 
-/* ==========================================================================
-   TAB 2: DEDICATED FULL RECOMMENDATIONS PANEL
-   ========================================================================== */
+/* TAB 2: DEDICATED FULL RECOMMENDATIONS PANEL*/
 .panel-hero-header {
   display: flex;
   justify-content: space-between;
@@ -925,9 +904,9 @@ body {
   color: #FFFFFF;
 }
 
-/* ==========================================================================
+/* 
    Buttons
-   ========================================================================== */
+    */
 .btn-pill-action {
   background: var(--text-dark);
   color: #FFFFFF;
@@ -972,9 +951,7 @@ body {
   background: #FEE2E2;
 }
 
-/* ==========================================================================
-   What-If & Cohort Triage
-   ========================================================================== */
+/*What-If & Cohort Triage */
 .whatif-3col-grid {
   display: grid;
   grid-template-columns: 1fr 1.1fr 1fr;
@@ -1238,9 +1215,7 @@ body {
 
 .empty-state { text-align: center; color: var(--text-muted); padding: 28px !important; }
 
-/* ==========================================================================
-   Analytics (Tab 5)
-   ========================================================================== */
+/* Analytics (Tab 5)*/
 .analytics-2col-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

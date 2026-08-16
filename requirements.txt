@@ -1,10 +1,9 @@
 pandas
 numpy
 scikit-learn
+joblib
 matplotlib
 seaborn
-joblib
-gradio
 fastapi
 uvicorn
 pydantic

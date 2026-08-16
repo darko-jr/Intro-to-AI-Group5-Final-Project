@@ -1,22 +1,18 @@
-"""
-Prediction and Explainability Engine for Student Risk Early-Warning System.
-Ashesi University · Intro to AI · Group 5
-"""
-
 import os
 import joblib
 import numpy as np
 import pandas as pd
 from typing import Dict, Any, List, Tuple
 
-# Baseline statistics and feature metadata
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 FEATURE_METADATA = {
     "G1": {
         "name": "First Period Grade (G1)",
         "desc": "First term academic score (0-20 scale)",
         "min": 0, "max": 20, "default": 11, "step": 1,
         "category": "academic",
-        "direction": -1,  # higher is protective (lower risk)
+        "direction": -1,
         "mean": 11.4273, "scale": 2.7427,
         "importance": 0.4468,
         "tip": "Grades <= 9 strongly indicate academic distress."
@@ -26,7 +22,7 @@ FEATURE_METADATA = {
         "desc": "Number of past class failures (0 to 3)",
         "min": 0, "max": 3, "default": 0, "step": 1,
         "category": "academic",
-        "direction": 1,  # higher is risk
+        "direction": 1,
         "mean": 0.2379, "scale": 0.6302,
         "importance": 0.1695,
         "tip": "Past failures are a primary indicator of foundational learning gaps."
@@ -36,7 +32,7 @@ FEATURE_METADATA = {
         "desc": "Number of days absent in current term (0-40+)",
         "min": 0, "max": 40, "default": 4, "step": 1,
         "category": "attendance",
-        "direction": 1,  # higher is risk
+        "direction": 1,
         "mean": 3.6278, "scale": 4.5903,
         "importance": 0.1082,
         "tip": "Absences >= 8 significantly elevate likelihood of falling behind."
@@ -46,7 +42,7 @@ FEATURE_METADATA = {
         "desc": "Age in years (15-22)",
         "min": 15, "max": 22, "default": 17, "step": 1,
         "category": "demographic",
-        "direction": 1,  # older relative to grade often correlates with repetition
+        "direction": 1,
         "mean": 16.7379, "scale": 1.2291,
         "importance": 0.0573,
         "tip": "Older age within grade often indicates previous grade retention."
@@ -56,7 +52,7 @@ FEATURE_METADATA = {
         "desc": "Self-reported health rating (1=very poor, 5=very good)",
         "min": 1, "max": 5, "default": 4, "step": 1,
         "category": "wellbeing",
-        "direction": -1,  # higher is protective
+        "direction": -1,
         "mean": 3.5374, "scale": 1.4502,
         "importance": 0.0456,
         "tip": "Chronic health issues or low vitality impact focus and consistency."
@@ -66,7 +62,7 @@ FEATURE_METADATA = {
         "desc": "Free time availability (1=very low, 5=very high)",
         "min": 1, "max": 5, "default": 3, "step": 1,
         "category": "lifestyle",
-        "direction": 1,  # unstructured free time can correlate with low study engagement
+        "direction": 1,
         "mean": 3.1608, "scale": 1.0756,
         "importance": 0.0441,
         "tip": "Excessive unstructured free time often displaces academic study."
@@ -76,7 +72,7 @@ FEATURE_METADATA = {
         "desc": "Weekend alcohol use (1=very low, 5=very high)",
         "min": 1, "max": 5, "default": 1, "step": 1,
         "category": "lifestyle",
-        "direction": 1,  # higher is risk
+        "direction": 1,
         "mean": 2.2511, "scale": 1.2623,
         "importance": 0.0384,
         "tip": "Elevated alcohol consumption impairs cognitive recovery and attendance."
@@ -86,7 +82,7 @@ FEATURE_METADATA = {
         "desc": "Socializing frequency (1=very low, 5=very high)",
         "min": 1, "max": 5, "default": 3, "step": 1,
         "category": "lifestyle",
-        "direction": 1,  # higher is risk
+        "direction": 1,
         "mean": 3.2181, "scale": 1.1830,
         "importance": 0.0352,
         "tip": "Very high social frequency without balance reduces revision time."
@@ -96,7 +92,7 @@ FEATURE_METADATA = {
         "desc": "0=none, 1=primary, 2=middle, 3=secondary, 4=higher",
         "min": 0, "max": 4, "default": 2, "step": 1,
         "category": "family",
-        "direction": -1,  # higher is protective
+        "direction": -1,
         "mean": 2.4824, "scale": 1.1120,
         "importance": 0.0306,
         "tip": "Parental education level correlates with at-home academic guidance."
@@ -106,7 +102,7 @@ FEATURE_METADATA = {
         "desc": "Quality of family relationships (1=very poor, 5=excellent)",
         "min": 1, "max": 5, "default": 4, "step": 1,
         "category": "family",
-        "direction": -1,  # higher is protective
+        "direction": -1,
         "mean": 3.9097, "scale": 0.9472,
         "importance": 0.0243,
         "tip": "Strong emotional support at home provides resilience during challenges."
@@ -121,7 +117,7 @@ ORDERED_FEATURES = [
 PRESET_PERSONAS = {
     "high_risk": {
         "title": "High Risk Student",
-        "desc": "Low early grade, 2 prior failures, high absences & disengagement",
+        "desc": "Low early grade, 2 prior failures, high absences",
         "badge": "High Risk Profile",
         "values": {
             "G1": 6, "failures": 2, "absences": 18, "age": 18,
@@ -130,8 +126,8 @@ PRESET_PERSONAS = {
         }
     },
     "borderline": {
-        "title": "Borderline / Moderate Risk",
-        "desc": "Passing but fragile grade, 1 failure, mild attendance slippage",
+        "title": "Moderate Risk Student",
+        "desc": "Passing grade, 1 failure, mild attendance slippage",
         "badge": "Medium Risk Profile",
         "values": {
             "G1": 10, "failures": 1, "absences": 8, "age": 17,
@@ -140,8 +136,8 @@ PRESET_PERSONAS = {
         }
     },
     "thriving": {
-        "title": "Thriving / Low Risk",
-        "desc": "Solid academic standing, excellent attendance, high family support",
+        "title": "Low Risk Student",
+        "desc": "Solid academic standing, regular attendance, high family support",
         "badge": "Low Risk Profile",
         "values": {
             "G1": 16, "failures": 0, "absences": 1, "age": 16,
@@ -150,8 +146,8 @@ PRESET_PERSONAS = {
         }
     },
     "social_drift": {
-        "title": "Social & Attendance Drift",
-        "desc": "Capable student with heavy socializing, rising absences & alcohol use",
+        "title": "Attendance Slippage",
+        "desc": "Passing grades with increasing absences and social outings",
         "badge": "Emerging Risk Profile",
         "values": {
             "G1": 11, "failures": 0, "absences": 14, "age": 17,
@@ -160,6 +156,20 @@ PRESET_PERSONAS = {
         }
     }
 }
+
+
+def _find_file(filename: str) -> str:
+    candidates = [
+        os.path.join(BASE_DIR, "models", filename),
+        os.path.join(BASE_DIR, filename),
+        os.path.join(BASE_DIR, "data", "raw", filename),
+        os.path.join(BASE_DIR, "data", filename),
+        filename
+    ]
+    for p in candidates:
+        if os.path.exists(p):
+            return p
+    return filename
 
 
 class StudentRiskEngine:
@@ -172,9 +182,11 @@ class StudentRiskEngine:
         self._load_pipeline()
 
     def _load_pipeline(self):
-        """Loads the trained model bundle or fallback direct model."""
-        if os.path.exists(self.model_path):
-            bundle = joblib.load(self.model_path)
+        pipeline_file = _find_file(self.model_path)
+        model_file = _find_file("student_risk_model.pkl")
+
+        if os.path.exists(pipeline_file):
+            bundle = joblib.load(pipeline_file)
             if isinstance(bundle, dict):
                 self.model = bundle["model"]
                 self.scaler = bundle.get("scaler")
@@ -182,8 +194,8 @@ class StudentRiskEngine:
                 self.classes = list(bundle.get("classes", ["High", "Low", "Medium"]))
             else:
                 self.model = bundle
-        elif os.path.exists("student_risk_model.pkl"):
-            self.model = joblib.load("student_risk_model.pkl")
+        elif os.path.exists(model_file):
+            self.model = joblib.load(model_file)
             self.classes = list(getattr(self.model, "classes_", ["High", "Low", "Medium"]))
 
         if self.scaler is None:
@@ -196,11 +208,9 @@ class StudentRiskEngine:
             self.scaler.feature_names_in_ = np.array(self.top_features)
 
     def preprocess_input(self, input_dict: Dict[str, Any]) -> Tuple[pd.DataFrame, pd.DataFrame]:
-        """Preprocesses raw student features into standardized feature vectors."""
         row_raw = {feat: float(input_dict.get(feat, FEATURE_METADATA[feat]["default"])) for feat in self.top_features}
         raw_df = pd.DataFrame([row_raw])
         
-        # Standardize features using the fitted scaler
         scaled_vals = []
         for feat in self.top_features:
             val = row_raw[feat]
@@ -212,29 +222,21 @@ class StudentRiskEngine:
         return raw_df, scaled_df
 
     def predict(self, input_dict: Dict[str, Any]) -> Dict[str, Any]:
-        """Performs full risk inference, explainability attribution, and recommendation generation."""
         raw_df, scaled_df = self.preprocess_input(input_dict)
         
-        # Run prediction
         probs = self.model.predict_proba(scaled_df[self.top_features])[0]
         prob_dict = {cls: float(prob) for cls, prob in zip(self.classes, probs)}
         
-        # Normalize into clean order: High, Medium, Low
         high_p = prob_dict.get("High", 0.0)
         med_p = prob_dict.get("Medium", 0.0)
         low_p = prob_dict.get("Low", 0.0)
         
-        # Predicted class & confidence
         predicted_class = max(prob_dict, key=prob_dict.get)
         confidence = prob_dict[predicted_class]
         
-        # Composite Risk Score (0 - 100)
         risk_score = round((high_p * 100) + (med_p * 50), 1)
         
-        # Explainable AI: Feature contributions
         explanations = self._compute_explanations(raw_df.iloc[0].to_dict(), scaled_df.iloc[0].to_dict())
-        
-        # Targeted recommendations
         recommendations = self._generate_recommendations(raw_df.iloc[0].to_dict(), predicted_class, high_p)
         
         return {
@@ -253,7 +255,6 @@ class StudentRiskEngine:
         }
 
     def _compute_explanations(self, raw: Dict[str, float], scaled: Dict[str, float]) -> Dict[str, Any]:
-        """Calculates risk-elevating vs protective feature attribution."""
         drivers = []
         protective = []
         
@@ -263,7 +264,6 @@ class StudentRiskEngine:
             z_score = scaled[feat]
             importance = meta["importance"]
             
-            # Impact on risk (+ means increases risk, - means reduces risk / protective)
             impact = z_score * direction * importance
             
             item = {
@@ -290,69 +290,66 @@ class StudentRiskEngine:
         }
 
     def _format_factor_text(self, feat: str, val: float) -> str:
-        """Formats human-friendly insight text for a given feature."""
         val = int(val) if float(val).is_integer() else val
         if feat == "G1":
             if val <= 9:
-                return f"Critical G1 Grade ({val}/20) falls below passing threshold (≤9)"
+                return f"Low G1 Grade ({val}/20) falls below passing threshold (<= 9)"
             elif val <= 13:
                 return f"Moderate G1 Grade ({val}/20) leaves limited academic cushion"
             else:
-                return f"Strong G1 Grade ({val}/20) provides solid academic foundation"
+                return f"Strong G1 Grade ({val}/20) provides solid foundation"
         elif feat == "failures":
             if val > 0:
-                return f"{val} past class failure{'s' if val > 1 else ''} indicates prior difficulty"
+                return f"{val} past class failure{'s' if val > 1 else ''} recorded"
             return "No past course failures"
         elif feat == "absences":
             if val >= 10:
-                return f"{val} absences — severe attendance deficit"
+                return f"{val} absences: high attendance concern"
             elif val >= 5:
-                return f"{val} absences — moderate attendance concern"
+                return f"{val} absences: moderate attendance concern"
             return f"Low absences ({val} days)"
         elif feat == "Walc":
             if val >= 3:
-                return f"Elevated weekend alcohol consumption (level {val}/5)"
+                return f"Weekend alcohol consumption (level {val}/5)"
             return f"Low alcohol consumption (level {val}/5)"
         elif feat == "goout":
             if val >= 4:
                 return f"High frequency of social outings ({val}/5)"
-            return f"Moderate/low social outings ({val}/5)"
+            return f"Moderate social outings ({val}/5)"
         elif feat == "health":
             if val <= 2:
-                return f"Compromised health rating ({val}/5)"
+                return f"Low health rating ({val}/5)"
             return f"Good health status ({val}/5)"
         elif feat == "Medu":
             levels = ["None", "Primary", "Middle School", "Secondary", "Higher Education"]
             return f"Mother's education: {levels[min(int(val), 4)]}"
         elif feat == "famrel":
             if val <= 2:
-                return f"Strained family relationships ({val}/5)"
+                return f"Low family relationship rating ({val}/5)"
             return f"Supportive family relationships ({val}/5)"
         elif feat == "freetime":
             if val >= 4:
                 return f"High unstructured free time ({val}/5)"
-            return f"Structured free time ({val}/5)"
+            return f"Balanced free time ({val}/5)"
         elif feat == "age":
             return f"Age {val} years"
         return f"{feat}: {val}"
 
     def _generate_recommendations(self, raw: Dict[str, float], predicted_class: str, high_p: float) -> List[Dict[str, Any]]:
-        """Generates concrete, highly actionable interventions based on student risk profile."""
         recs = []
         
-        # 1. Primary Academic Strategy
         if raw["G1"] <= 9 or raw["failures"] > 0:
             recs.append({
                 "category": "Academic Remediation",
                 "urgency": "Urgent",
                 "icon": "academic",
-                "action": "Assign Dedicated Peer Tutor & Remedial Plan",
-                "detail": f"Student has early score of {int(raw['G1'])}/20 and {int(raw['failures'])} prior failure(s). Immediate foundational review is required before midterm exams.",
+                "action": "Assign Peer Tutor and Remedial Review",
+                "detail": f"Student has early score of {int(raw['G1'])}/20 and {int(raw['failures'])} prior failure(s). Foundational topic review recommended before midterm exams.",
                 "timeline": "Within 48 hours",
                 "steps": [
-                    "Pair student with an upper-year peer tutor for 2 hours/week",
-                    "Conduct diagnostics on core weak topics from first period",
-                    "Require weekly homework submission check-ins"
+                    "Pair student with peer tutor for 2 hours per week",
+                    "Conduct diagnostic review on first period topics",
+                    "Schedule weekly assignment check-ins"
                 ]
             })
         elif raw["G1"] <= 12:
@@ -360,13 +357,13 @@ class StudentRiskEngine:
                 "category": "Academic Support",
                 "urgency": "Moderate",
                 "icon": "academic",
-                "action": "Bi-Weekly Study Skills & Exam Preparation",
-                "detail": f"With G1={int(raw['G1'])}/20, student is passing but vulnerable to downward grade drift. Structured revision will secure course completion.",
+                "action": "Study Skills and Office Hours Attendance",
+                "detail": f"With G1={int(raw['G1'])}/20, student is passing but near the risk threshold. Structured revision recommended.",
                 "timeline": "Next 1-2 weeks",
                 "steps": [
-                    "Provide past exam revision worksheets",
-                    "Schedule check-in with course instructor during office hours",
-                    "Encourage joining an active study group"
+                    "Provide review worksheets and practice questions",
+                    "Encourage instructor office hours visit",
+                    "Suggest joining a course study group"
                 ]
             })
         else:
@@ -374,28 +371,27 @@ class StudentRiskEngine:
                 "category": "Academic Enrichment",
                 "urgency": "Maintenance",
                 "icon": "academic",
-                "action": "Maintain Academic Trajectory & Extension Projects",
-                "detail": f"Strong academic baseline (G1={int(raw['G1'])}/20). Student is excelling and ready for advanced topics.",
+                "action": "Maintain Academic Progress",
+                "detail": f"Strong academic baseline (G1={int(raw['G1'])}/20). Student is on track in the course.",
                 "timeline": "Ongoing",
                 "steps": [
-                    "Offer optional honors exercises or research opportunities",
-                    "Consider student as a candidate for peer tutoring leadership"
+                    "Provide extension or honors problem sets if interested",
+                    "Consider student for peer tutoring opportunities"
                 ]
             })
             
-        # 2. Attendance & Engagement Strategy
         if raw["absences"] >= 8:
             recs.append({
-                "category": "Attendance & Retention",
+                "category": "Attendance and Retention",
                 "urgency": "Urgent" if raw["absences"] >= 12 else "Moderate",
                 "icon": "attendance",
-                "action": "Attendance Contract & Academic Advisor Consultation",
-                "detail": f"Student has accumulated {int(raw['absences'])} absences this term. Chronic absenteeism directly threatens credit retention.",
+                "action": "Attendance Review and Advisor Meeting",
+                "detail": f"Student has accumulated {int(raw['absences'])} absences this term. High absence rates correlate with lower course completion.",
                 "timeline": "Immediate",
                 "steps": [
-                    "Sign an attendance accountability plan with advisor",
-                    "Establish automated SMS / email notifications for missed classes",
-                    "Investigate root cause of absences (transportation, health, or schedule)"
+                    "Review attendance policy with academic advisor",
+                    "Set up automated attendance notifications",
+                    "Identify underlying reasons for missed classes"
                 ]
             })
         elif raw["absences"] >= 4:
@@ -403,48 +399,45 @@ class StudentRiskEngine:
                 "category": "Attendance Monitoring",
                 "urgency": "Low",
                 "icon": "attendance",
-                "action": "Attendance Monitoring & Schedule Alignment",
-                "detail": f"Moderate absence count ({int(raw['absences'])} days). Ensure student stays within the acceptable term attendance threshold.",
+                "action": "Attendance Check-In",
+                "detail": f"Moderate absence count ({int(raw['absences'])} days). Ensure student stays within attendance limits.",
                 "timeline": "Next class cycle",
                 "steps": [
-                    "Advisor sends a friendly check-in reminder on class policy"
+                    "Send check-in note regarding class attendance"
                 ]
             })
 
-        # 3. Wellbeing, Lifestyle & Social Balance Strategy
         if raw["Walc"] >= 3 or raw["goout"] >= 4:
             recs.append({
-                "category": "Student Life & Habits",
+                "category": "Student Habits",
                 "urgency": "Moderate",
                 "icon": "lifestyle",
-                "action": "Time-Management & Healthy Routine Coaching",
-                "detail": "High socializing / weekend alcohol patterns may displace sleep and dedicated weekend revision hours.",
+                "action": "Time Management Coaching",
+                "detail": "Frequent social activities and weekend habits may reduce dedicated revision time.",
                 "timeline": "Within 1 week",
                 "steps": [
-                    "Provide time-blocking calendar template to balance social life with study blocks",
-                    "Recommend on-campus wellness workshop on sleep hygiene and stress management"
+                    "Introduce weekly time-blocking schedule",
+                    "Discuss balance between social activities and study commitments"
                 ]
             })
 
-        # 4. Personal & Emotional Counseling Support
         if raw["health"] <= 2 or raw["famrel"] <= 2:
             recs.append({
-                "category": "Personal Wellbeing",
+                "category": "Student Wellbeing",
                 "urgency": "Urgent" if raw["health"] == 1 or raw["famrel"] == 1 else "Moderate",
                 "icon": "wellness",
-                "action": "Campus Counseling & Health Center Referral",
-                "detail": "Indicators flag potential health limitations or home stress affecting study focus and emotional resilience.",
-                "timeline": "Confidential / Within 3 days",
+                "action": "Counseling and Support Services Referral",
+                "detail": "Indicators suggest potential health or personal factors affecting academic focus.",
+                "timeline": "Within 3 days",
                 "steps": [
-                    "Provide confidential referral link to campus counseling center",
-                    "Check eligibility for academic accommodations if health related"
+                    "Provide confidential counseling center contact details",
+                    "Review academic accommodation options if health-related"
                 ]
             })
 
         return recs
 
     def simulate_what_if(self, baseline_inputs: Dict[str, Any], modified_inputs: Dict[str, Any]) -> Dict[str, Any]:
-        """Calculates delta between baseline student profile and proposed intervention changes."""
         base_result = self.predict(baseline_inputs)
         mod_result = self.predict(modified_inputs)
         
@@ -460,12 +453,11 @@ class StudentRiskEngine:
                 "high_p_diff": high_p_diff,
                 "low_p_diff": low_p_diff,
                 "improved": risk_score_diff < 0,
-                "category_shift": f"{base_result['predicted_class']} ➔ {mod_result['predicted_class']}"
+                "category_shift": f"{base_result['predicted_class']} Risk to {mod_result['predicted_class']} Risk"
             }
         }
 
     def process_batch(self, df: pd.DataFrame) -> Dict[str, Any]:
-        """Processes an entire cohort of students and generates summary metrics and triage tables."""
         results = []
         working_df = df.copy()
         
@@ -513,5 +505,4 @@ class StudentRiskEngine:
         }
 
 
-# Singleton instance
 engine = StudentRiskEngine()
