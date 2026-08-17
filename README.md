@@ -195,9 +195,3 @@ Details: Student has early score of 7/20 and 2 prior failure(s). Foundational to
 
 ---
 
-## 7. Team Contributions
-
-* **Daniel Darko:** Machine learning pipeline development, Random Forest hyperparameter optimization, and Explainable AI (XAI) feature contribution engine.
-* **Victoria Kyeremeh:** Data preprocessing, stratified train/validation/test partitioning, exploratory data analysis, and documentation.
-* **Esbert A. Agbadi:** FastAPI backend server development, REST API endpoints, and What-If scenario simulation logic.
-* **Vera Okyere-Ampofo:** User interface design system, SVG progress gauge visualizations, interactive class roster components, and documentation.
