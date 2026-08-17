@@ -27,6 +27,8 @@ Intro-to-AI-Group5-Final-Project/
 │       ├── X_train.csv, y_train.csv     # 70% Stratified Training partition (N=454)
 │       ├── X_val.csv, y_val.csv         # 15% Stratified Validation partition (N=97)
 │       └── X_test.csv, y_test.csv       # 15% Stratified Test partition (N=98)
+├── docs/
+│   └── USER_GUIDE_AND_INTERPRETATION.md # Comprehensive User Guide & Technical Manual
 ├── models/
 │   ├── student_risk_model.pkl           # Trained Random Forest estimator
 │   └── student_risk_pipeline.pkl        # Serialized pipeline with StandardScaler & top features
@@ -34,20 +36,16 @@ Intro-to-AI-Group5-Final-Project/
 │   ├── data_preprocessing.ipynb         # EDA, target discretization, and stratified splitting
 │   ├── Final_Development_Sprint1&2.ipynb# Sprint 1 vs Sprint 2 modeling and hyperparameter tuning
 │   └── GUI_PREDICTION.ipynb             # Decision-support demo and model inference notebook
-├── docs/
-│   ├── FINAL_PROJECT_REPORT.docx        # Editable Word Document Final Report
-│   ├── FINAL_PROJECT_REPORT.md          # Complete Markdown Final Report
-│   └── USER_GUIDE_AND_INTERPRETATION.md # Comprehensive User Guide & Technical Manual
-├── templates/
-│   └── index.html                       # Responsive web portal with SVG gauges & roster grid
 ├── static/
 │   ├── styles.css                       # HSL-tailored design system, tokens, and animations
 │   └── app.js                           # Client-side inference, roster filtering, and persistence
+├── templates/
+│   └── index.html                       # Responsive web portal with SVG gauges & roster grid
+├── .gitignore                           # Git exclusion rules
 ├── app.py                               # FastAPI ASGI web application & REST API server
 ├── prediction_engine.py                 # Self-contained ML engine, alias mapping & recommendations
-├── requirements.txt                     # Reproducible environment dependencies
-├── .gitignore                           # Git exclusion rules
 └── README.md                            # Project overview, setup, and usage documentation
+├── requirements.txt                     # Reproducible environment dependencies
 ```
 
 ---
