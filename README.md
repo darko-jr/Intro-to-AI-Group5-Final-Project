@@ -1,17 +1,16 @@
 # Smartech: Student Academic Risk Early-Warning & Decision Support System
 
-
 ---
 
 ## 1. Project Overview
 
-**Smartech** is an Explainable AI (XAI) early-warning and decision-support system designed to forecast secondary student risk of academic failure in Portuguese language courses ($G3 \le 9/20$) early in the term using first-period academic performance ($G1$), term attendance records, and behavioral factors.
+**Smartech** is an Explainable AI (XAI) early-warning and decision-support system designed to forecast secondary student risk of academic failure in Portuguese language courses ($G3 \le 9/20$) early in the academic term. By synthesizing first-period academic performance ($G1$), historical course failures, attendance patterns, and lifestyle support indicators, the platform provides actionable, multi-tiered risk classifications and prescriptive intervention workflows for academic advisors and educators.
 
 ### Key Model Performance (Sprint 2 Tuned Model)
 - **Algorithm:** Random Forest Classifier (Optimized via 5-Fold Stratified Cross-Validation)
 - **Test Accuracy:** **80.61%** (vs. 76.53% Sprint 1 baseline)
 - **Macro F1-Score:** **0.7101** | **Weighted F1-Score:** **0.7910**
-- **Critical Safety:** **0.0% False Negatives** (Zero High-Risk students classified as Low-Risk)
+- **Critical Safety:** **0.0% False Negatives** (Zero High-Risk students classified as Low-Risk on held-out test data)
 - **Feature Space:** Reduced from 30+ to **Top 10 most influential features** ($G1$, `failures`, `absences`, `age`, `health`, `freetime`, `Walc`, `goout`, `Medu`, `famrel`) — a 66.7% dimensionality reduction.
 
 ---
@@ -36,16 +35,16 @@ Intro-to-AI-Group5-Final-Project/
 │   ├── Final_Development_Sprint1&2.ipynb# Sprint 1 vs Sprint 2 modeling and hyperparameter tuning
 │   └── GUI_PREDICTION.ipynb             # Decision-support demo and model inference notebook
 ├── docs/
-│   ├── FINAL_PROJECT_REPORT.docx        # Editable Word Document Final Report (6-10 pages)
+│   ├── FINAL_PROJECT_REPORT.docx        # Editable Word Document Final Report
 │   ├── FINAL_PROJECT_REPORT.md          # Complete Markdown Final Report
-│   └── USER_GUIDE_AND_INTERPRETATION.md # Technical documentation and XAI metric guide
+│   └── USER_GUIDE_AND_INTERPRETATION.md # Comprehensive User Guide & Technical Manual
 ├── templates/
-│   └── index.html                       # Executive dashboard interface with SVG progress gauges
+│   └── index.html                       # Responsive web portal with SVG gauges & roster grid
 ├── static/
-│   ├── styles.css                       # Design tokens, layouts, and animations
-│   └── app.js                           # Real-time inference client, search, and triage logic
+│   ├── styles.css                       # HSL-tailored design system, tokens, and animations
+│   └── app.js                           # Client-side inference, roster filtering, and persistence
 ├── app.py                               # FastAPI ASGI web application & REST API server
-├── prediction_engine.py                 # Self-contained ML engine, XAI attribution & recommendations
+├── prediction_engine.py                 # Self-contained ML engine, alias mapping & recommendations
 ├── requirements.txt                     # Reproducible environment dependencies
 ├── .gitignore                           # Git exclusion rules
 └── README.md                            # Project overview, setup, and usage documentation
@@ -86,18 +85,44 @@ Start the FastAPI server:
 ```bash
 python app.py
 ```
-Open your browser and navigate to:
-**`http://127.0.0.1:7860`** *(or the dynamic port printed in your console)*
+Open your web browser and navigate to:
+**`http://127.0.0.1:7860`** *(or the port printed in your console)*
 
-**Key Dashboard Features:**
-1. **Dashboard Tab:** Live multi-feature sliders with real-time animated SVG progress rings for Academic Risk, Model Confidence, and $G1$ score.
-2. **Recommendations Tab:** 4-Pillar prescriptive action plans with interactive check-off steps for counselors.
-3. **What-If Simulator Tab:** Dual-slider simulation calculating projected risk score reductions and category shifts in real time.
-4. **Cohort Triage Tab:** Drag-and-drop CSV dataset upload with real-time search, risk filtering, and CSV report export.
-5. **Model Validation Tab:** Full academic validation metrics, 5-fold cross-validation results, and test confusion matrix.
+### Dashboard Architecture & Feature Tour:
+1. **Teacher Command Center & Class Roster (Dashboard):**
+   * **Class Roster Grid:** Displays enrolled students with ID tags, risk badges, and baseline scores ($G1$, absences, failures).
+   * **One-Click Student Inspection:** Selecting any student instantly loads their indicators into the 10 interactive sliders and recalculates risk in real time.
+   * **Quick Risk Filtering:** Filter roster by `All`, `High Risk`, `Moderate`, or `Low Risk`.
+   * **Random Student Picker:** 1-click random case testing.
+   * **Live Visual Gauges:** 3 animated circular SVG gauges for Composite Academic Risk (%), Model Certainty (%), and $G1$ Grade.
+   * **Explainable AI (XAI):** Real-time breakdown of top risk drivers versus protective factors.
+
+2. **Prescriptive Recommendations (Intervention Plan):**
+   * Multi-pillar intervention plan spanning Academic Remediation, Attendance Monitoring, Health/Counseling, and Habit Coaching.
+   * Interactive check-off steps for counselors with direct audit logging to session history.
+
+3. **What-If Scenario Simulator:**
+   * Dual-panel sandbox evaluating projected student improvements (e.g. reducing absences from 16 to 4 days or raising $G1$ from 7 to 12).
+   * Visualizes the Delta ($\Delta$) risk reduction and category shift.
+
+4. **Cohort Batch Triage:**
+   * Drag-and-drop CSV batch upload or 1-click loading of the sample test cohort ($N=98$).
+   * **Smart Column Mapping:** Automatically maps common column aliases (e.g., `attendance` $\rightarrow$ `absences`, `grade1` $\rightarrow$ `G1`).
+   * **Fallback Imputation:** Missing non-critical columns are automatically filled with neutral cohort medians without pipeline failure.
+   * Generates cohort risk distribution KPIs and exportable CSV triage reports.
+   * **Reset to Main Roster:** Toggle back to the full 649 enrolled database anytime.
+
+5. **Session History Log:**
+   * Chronological record of logged assessments with one-click CSV export.
+
+6. **User Guide & Technical Interpretation Manual (`/guide`):**
+   * Integrated documentation accessible via the top-navigation **User Guide** button, detailing feature weights, risk mathematics, clinical workflows, and FAQs.
+
+7. **Full State Persistence:**
+   * Uploaded datasets, selected student records, and active navigation tabs persist across browser page reloads via local storage caching.
 
 ### Method 2: Run via Jupyter Notebook
-To run inference programmatically or explore data preprocessing:
+To run inference programmatically or inspect exploratory data analysis:
 ```bash
 jupyter notebook notebooks/GUI_PREDICTION.ipynb
 ```
@@ -111,17 +136,18 @@ You can import and run the self-contained prediction engine in Python:
 ```python
 from prediction_engine import engine
 
-# 1. Define a student profile
+# 1. Define a student profile using Student ID and top 10 indicators
 sample_student = {
-    "G1": 7,          # First period grade (0-20)
-    "failures": 2,    # Past class failures (0-3)
-    "absences": 16,   # Term absences
+    "id": "STU-042",
+    "G1": 7,          # First period grade (0-20, passing cutoff >= 10)
+    "failures": 2,    # Past course failures (0-3+)
+    "absences": 16,   # Term absences in days
     "age": 18,        # Student age
-    "health": 2,      # Health status (1-5)
+    "health": 2,      # Self-reported health status (1-5)
     "freetime": 4,    # Free time after school (1-5)
     "Walc": 4,        # Weekend alcohol consumption (1-5)
-    "goout": 4,       # Going out frequency (1-5)
-    "Medu": 1,        # Mother's education level (0-4)
+    "goout": 4,       # Social outing frequency (1-5)
+    "Medu": 1,        # Mother's education level (0=None, 1=Primary, 2=Middle, 3=Secondary, 4=Higher Ed)
     "famrel": 2       # Family relationship quality (1-5)
 }
 
@@ -129,7 +155,7 @@ sample_student = {
 result = engine.predict(sample_student)
 
 # 3. View predicted risk tier and certainty
-print("Predicted Risk Tier :", result["predicted_class"])  # e.g., 'High'
+print("Predicted Risk Tier :", result["predicted_class"])  # 'High', 'Medium', or 'Low'
 print("Certainty Confidence :", f"{result['confidence']}%")
 print("Composite Risk Score :", f"{result['risk_score']} / 100")
 
@@ -151,15 +177,27 @@ Certainty Confidence : 98.4%
 Composite Risk Score : 79.2 / 100
 
 Primary Risk Drivers:
- - First Period Grade (G1): Score of 7/20 is below passing threshold (+44.7% impact)
+ - First Period Grade (G1): Low G1 Grade (7/20) falls below passing threshold (<= 9) (+44.7% impact)
  - Past Class Failures: 2 previous course failures (+17.0% impact)
  - Term Absences: 16 days missed exceeds safe threshold (+10.8% impact)
 
-Recommended Action: [High] Academic Tutoring & Foundational Remediation
-Details: Schedule 2 hours/week of mandatory subject tutoring and conduct a diagnostic review.
+Recommended Action: [Urgent] Assign Peer Tutor and Remedial Review
+Details: Student has early score of 7/20 and 2 prior failure(s). Foundational topic review recommended before midterm exams.
 ```
 
 ---
 
+## 6. Academic Honesty & Responsible AI Governance
 
+* **Course Context:** CS 254 Introduction to Artificial Intelligence, Ashesi University.
+* **Human-in-the-Loop Safeguard:** Smartech is strictly an early-warning decision-support system. It does not replace teacher judgment or automate disciplinary actions.
+* **Data Privacy:** Raw records are identified solely by anonymized Student IDs (`STU-001`, `STU-POR-008`). No Personally Identifiable Information (PII) is ingested or stored.
 
+---
+
+## 7. Team Contributions
+
+* **Daniel Darko:** Machine learning pipeline development, Random Forest hyperparameter optimization, and Explainable AI (XAI) feature contribution engine.
+* **Victoria Kyeremeh:** Data preprocessing, stratified train/validation/test partitioning, exploratory data analysis, and documentation.
+* **Esbert A. Agbadi:** FastAPI backend server development, REST API endpoints, and What-If scenario simulation logic.
+* **Vera Okyere-Ampofo:** User interface design system, SVG progress gauge visualizations, interactive class roster components, and documentation.
